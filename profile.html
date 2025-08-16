@@ -145,29 +145,31 @@
     </footer>
 
     <!-- FIREBASE SDKs -->
+    <!-- We are using 'type="module"' to allow for modern JavaScript 'import' syntax -->
     <script type="module">
-        // Import the functions you need from the SDKs
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         // --- 1. FIREBASE CONFIGURATION ---
-        // These global variables are provided by the environment.
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        // Your web app's Firebase configuration that you provided.
+        // IMPORTANT: In a real production app, you should use a more secure way to handle these keys,
+        // like Firebase App Check or environment variables, to prevent unauthorized use.
+        const firebaseConfig = {
+            apiKey: "AIzaSyBrP14baJEyuYYt5xOUt4SeSeUFM3RY2rk",
+            authDomain: "skilix.firebaseapp.com",
+            projectId: "skilix",
+            storageBucket: "skilix.appspot.com", // Corrected storage bucket domain
+            messagingSenderId: "1042532384192",
+            appId: "1:1042532384192:web:c0cc1939bb1ba8f7c69c25",
+            measurementId: "G-H7LB645GR9"
+        };
 
         // --- 2. INITIALIZE FIREBASE & SERVICES ---
-        let app, auth, db;
-        try {
-            app = initializeApp(firebaseConfig);
-            auth = getAuth(app);
-            db = getFirestore(app);
-        } catch (e) {
-            console.error("Error initializing Firebase:", e);
-            document.getElementById('auth-status').textContent = 'Firebase config error.';
-        }
-        
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
 
         // --- 3. UTILITY FUNCTION FOR NOTIFICATIONS ---
         const showNotification = (message) => {
@@ -182,6 +184,7 @@
 
         // --- 4. MAIN AUTHENTICATION & DATA HANDLING LOGIC ---
         // onAuthStateChanged is the core listener. It runs whenever the user's login state changes.
+        // It runs once on page load, and again if the user logs in or out.
         onAuthStateChanged(auth, user => {
             const authStatusEl = document.getElementById('auth-status');
             if (user) {
@@ -190,9 +193,8 @@
                 authStatusEl.textContent = `UID: ${user.uid}`;
                 
                 // Create a reference to this user's specific document in Firestore.
-                // This is like setting up a specific row for the user in our cloud spreadsheet.
-                // The path is structured to keep every user's data private and organized.
-                const userDocRef = doc(db, "artifacts", appId, "users", user.uid, "profile", "data");
+                // We are creating a collection called 'users' and each document will be named after the user's unique ID (uid).
+                const userDocRef = doc(db, "users", user.uid);
 
                 // --- A) FETCH USER DATA FROM FIRESTORE ---
                 const loadUserProfile = async () => {
@@ -204,7 +206,7 @@
                             console.log("Document data:", docSnap.data());
                             const data = docSnap.data();
                             
-                            // Populate the form and display elements with the fetched data
+                            // Populate the form and display elements with the data
                             document.getElementById('user-name-display').textContent = data.fullName || 'No name set';
                             document.getElementById('user-email-display').textContent = data.email || user.email || 'No email set';
                             document.getElementById('user-avatar').src = `https://placehold.co/150x150/e0e7ff/4f46e5?text=${(data.fullName || 'A').charAt(0)}`;
@@ -251,19 +253,19 @@
                         country: document.getElementById('country').value,
                         state: document.getElementById('state').value,
                         city: document.getElementById('city').value,
+                        // You can also save the email if you want
                         email: document.getElementById('user-email-display').textContent,
                     };
 
                     try {
-                        // Use setDoc to save the data to the user's specific document reference.
-                        // { merge: true } ensures we only update the fields provided and don't
-                        // accidentally overwrite other data. It creates the document if it doesn't exist.
+                        // Use setDoc to save the data. Using { merge: true } means it will only
+                        // update the fields in our object, without overwriting other fields
+                        // that might exist in the document. It will create the document if it doesn't exist.
                         await setDoc(userDocRef, profileData, { merge: true });
                         console.log("Profile updated successfully!");
                         showNotification("Profile saved successfully!");
                         // Also update the display name in the header after saving
                         document.getElementById('user-name-display').textContent = profileData.fullName;
-                        document.getElementById('user-avatar').src = `https://placehold.co/150x150/e0e7ff/4f46e5?text=${(profileData.fullName || 'A').charAt(0)}`;
                     } catch (error) {
                         console.error("Error updating profile: ", error);
                         showNotification("Error saving profile.");
@@ -272,25 +274,13 @@
 
             } else {
                 // --- USER IS LOGGED OUT ---
-                console.log("User is logged out. Attempting to sign in.");
-                authStatusEl.textContent = 'Authenticating...';
-                
-                // Sign in with the provided token, or fall back to anonymous sign-in.
-                const signIn = async () => {
-                    try {
-                        if (initialAuthToken) {
-                            await signInWithCustomToken(auth, initialAuthToken);
-                            console.log("Signed in with custom token.");
-                        } else {
-                            await signInAnonymously(auth);
-                            console.log("Signed in anonymously.");
-                        }
-                    } catch (error) {
-                        console.error("Sign-in failed:", error);
-                        authStatusEl.textContent = 'Authentication failed.';
-                    }
-                };
-                signIn();
+                console.log("User is logged out. Attempting to sign in anonymously.");
+                authStatusEl.textContent = 'Not logged in.';
+                // For this demo, we automatically sign the user in anonymously.
+                // In a real app, you would show a login screen (e.g., with Google Sign-In button).
+                signInAnonymously(auth).catch((error) => {
+                    console.error("Anonymous sign-in failed:", error);
+                });
             }
         });
 
@@ -299,11 +289,7 @@
             signOut(auth).then(() => {
                 console.log('User signed out.');
                 showNotification('You have been logged out.');
-                // Clear the form and display on logout
-                document.getElementById('profile-form').reset();
-                document.getElementById('user-name-display').textContent = 'Not logged in';
-                document.getElementById('user-email-display').textContent = '';
-                document.getElementById('auth-status').textContent = 'Logged out.';
+                // The onAuthStateChanged listener will handle the rest.
             }).catch((error) => {
                 console.error('Sign out error', error);
             });
