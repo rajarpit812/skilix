@@ -74,10 +74,10 @@
                     <a href="#internships" class="nav-link block mt-4 lg:inline-block lg:mt-0 text-gray-600 hover:text-gray-900 mr-4">Internships</a>
                     <a href="#features" class="nav-link block mt-4 lg:inline-block lg:mt-0 text-gray-600 hover:text-gray-900 mr-4">Features</a>
                     <a href="#contact" class="nav-link block mt-4 lg:inline-block lg:mt-0 text-gray-600 hover:text-gray-900">Contact</a>
-                    <a href="profile.html" id="profile-link" class="nav-link block mt-4 lg:inline-block lg:mt-0 text-gray-600 hover:text-gray-900">My Profile</a>
                 </div>
-                <div>
-                     <button id="auth-btn" class="cta-button inline-block bg-indigo-600 text-white font-semibold py-2 px-6 rounded-full text-lg shadow-md hover:bg-indigo-700 ml-4">
+                <!-- Auth Container: This will dynamically change based on login state -->
+                <div id="auth-container" class="flex items-center space-x-4 ml-4">
+                     <button id="auth-btn" class="cta-button inline-block bg-indigo-600 text-white font-semibold py-2 px-6 rounded-full text-lg shadow-md hover:bg-indigo-700">
                         Login
                     </button>
                 </div>
@@ -338,13 +338,12 @@
         const auth = getAuth(app);
 
         // Get DOM Elements
-        const authBtn = document.getElementById('auth-btn');
+        const authContainer = document.getElementById('auth-container');
         const loginModal = document.getElementById('login-modal');
         const closeModalBtn = document.getElementById('close-modal-btn');
-        const profileLink = document.getElementById('profile-link');
         const messageBox = document.getElementById('message-box');
         
-        // Login Form and Buttons
+        // Login Form and Buttons (inside modal)
         const emailLoginForm = document.getElementById('email-login-form');
         const loginEmailInput = document.getElementById('login-email');
         const loginPasswordInput = document.getElementById('login-password');
@@ -354,17 +353,14 @@
 
         // --- UTILITY FUNCTIONS ---
         
-        // Function to show the login modal
         function showModal() {
             loginModal.classList.remove('hidden');
         }
 
-        // Function to hide the login modal
         function hideModal() {
             loginModal.classList.add('hidden');
         }
         
-        // Function to show a notification message
         function showMessage(message, isError = false) {
             messageBox.textContent = message;
             messageBox.style.backgroundColor = isError ? '#ef4444' : '#22c55e'; // red-500 or green-500
@@ -376,7 +372,6 @@
 
         // --- AUTHENTICATION LOGIC ---
 
-        // Sign in with Google
         async function signInWithGoogle() {
             const provider = new GoogleAuthProvider();
             try {
@@ -389,7 +384,6 @@
             }
         }
 
-        // Sign in with GitHub
         async function signInWithGitHub() {
             const provider = new GithubAuthProvider();
             try {
@@ -402,7 +396,6 @@
             }
         }
 
-        // Sign in with LinkedIn (Requires additional setup in Firebase Console)
         async function signInWithLinkedIn() {
             const provider = new OAuthProvider('linkedin.com');
              try {
@@ -416,9 +409,8 @@
             }
         }
 
-        // Sign in with Email and Password
         async function signInWithEmail(event) {
-            event.preventDefault(); // Prevent form from reloading the page
+            event.preventDefault();
             const email = loginEmailInput.value;
             const password = loginPasswordInput.value;
             try {
@@ -431,7 +423,6 @@
             }
         }
 
-        // Sign out
         async function logOut() {
             try {
                 await signOut(auth);
@@ -442,25 +433,44 @@
             }
         }
 
+        // --- UI UPDATE LOGIC ---
+        
+        function updateUI(user) {
+            authContainer.innerHTML = ''; // Clear the container
+            if (user) {
+                // User is signed in, show profile link and logout button
+                const userName = user.displayName || user.email;
+                
+                const profileLink = document.createElement('a');
+                profileLink.href = 'profile.html';
+                profileLink.textContent = userName;
+                profileLink.className = 'text-lg font-semibold text-gray-700 hover:text-indigo-600 transition-colors duration-300';
+
+                const logoutBtn = document.createElement('button');
+                logoutBtn.textContent = 'Logout';
+                logoutBtn.className = 'cta-button inline-block bg-indigo-600 text-white font-semibold py-2 px-6 rounded-full text-lg shadow-md hover:bg-indigo-700';
+                logoutBtn.addEventListener('click', logOut);
+
+                authContainer.appendChild(profileLink);
+                authContainer.appendChild(logoutBtn);
+
+            } else {
+                // User is signed out, show login button
+                const loginBtn = document.createElement('button');
+                loginBtn.textContent = 'Login';
+                loginBtn.className = 'cta-button inline-block bg-indigo-600 text-white font-semibold py-2 px-6 rounded-full text-lg shadow-md hover:bg-indigo-700';
+                loginBtn.addEventListener('click', showModal);
+                
+                authContainer.appendChild(loginBtn);
+            }
+        }
+
+
         // --- EVENT LISTENERS ---
 
         // Listen for authentication state changes
         onAuthStateChanged(auth, user => {
-            if (user) {
-                // User is signed in
-                console.log('User is signed in:', user);
-                authBtn.textContent = 'Logout';
-                authBtn.removeEventListener('click', showModal);
-                authBtn.addEventListener('click', logOut);
-                profileLink.textContent = user.displayName || user.email || 'My Profile';
-            } else {
-                // User is signed out
-                console.log('User is signed out.');
-                authBtn.textContent = 'Login';
-                authBtn.removeEventListener('click', logOut);
-                authBtn.addEventListener('click', showModal);
-                profileLink.textContent = 'My Profile';
-            }
+            updateUI(user); // Update the UI whenever auth state changes
         });
 
         // Modal event listeners
@@ -471,7 +481,7 @@
             }
         });
 
-        // Auth provider event listeners
+        // Auth provider event listeners (inside modal)
         googleLoginBtn.addEventListener('click', signInWithGoogle);
         githubLoginBtn.addEventListener('click', signInWithGitHub);
         linkedinLoginBtn.addEventListener('click', signInWithLinkedIn);
