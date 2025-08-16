@@ -319,16 +319,19 @@
             OAuthProvider, // For LinkedIn
             signInWithPopup,
             signInWithEmailAndPassword,
-            signOut,
-            signInAnonymously,
-            signInWithCustomToken
+            signOut
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
         // Your web app's Firebase configuration
-        // This configuration is provided by the environment
-        const firebaseConfig = typeof __firebase_config !== 'undefined' 
-            ? JSON.parse(__firebase_config)
-            : { apiKey: "your-api-key", authDomain: "your-auth-domain", projectId: "your-project-id" };
+        const firebaseConfig = {
+            apiKey: "AIzaSyBrP14baJEyuYYt5xOUt4SeSeUFM3RY2rk",
+            authDomain: "skilix.firebaseapp.com",
+            projectId: "skilix",
+            storageBucket: "skilix.appspot.com",
+            messagingSenderId: "1042532384192",
+            appId: "1:1042532384192:web:c0cc1939bb1ba8f7c69c25",
+            measurementId: "G-H7LB645GR9"
+        };
 
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
@@ -406,7 +409,8 @@
                 await signInWithPopup(auth, provider);
                 hideModal();
                 showMessage('Successfully logged in with LinkedIn!');
-            } catch (error) {
+            } catch (error)
+                {
                 console.error("LinkedIn Sign-In Error:", error);
                 showMessage(`LinkedIn login requires specific configuration in your Firebase project's settings.`, true);
             }
@@ -472,20 +476,6 @@
         githubLoginBtn.addEventListener('click', signInWithGitHub);
         linkedinLoginBtn.addEventListener('click', signInWithLinkedIn);
         emailLoginForm.addEventListener('submit', signInWithEmail);
-        
-        // Initial authentication check with custom token if available
-        (async () => {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    // Optional: Sign in anonymously if no user is logged in and no token is provided
-                    // await signInAnonymously(auth);
-                }
-            } catch (error) {
-                console.error("Anonymous or custom token sign-in failed", error);
-            }
-        })();
 
     </script>
 
