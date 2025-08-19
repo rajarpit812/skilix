@@ -230,6 +230,9 @@
         }
 
         usersToRender.forEach(user => {
+            // DEBUGGING: Log the user object to see what data is being received
+            console.log('Rendering user:', user.email, 'with applications:', user.appliedInternships);
+
             const userEl = document.createElement('div');
             userEl.className = 'border p-4 rounded-lg bg-white';
             const applicationsId = `apps-${user.uid}`;
@@ -239,7 +242,14 @@
             if (user.appliedInternships && user.appliedInternships.length > 0) {
                 applicationsHtml = user.appliedInternships.map(internshipId => {
                     const internship = internshipsMap.get(internshipId);
-                    return internship ? `<div class="mt-2 p-2 bg-indigo-50 rounded-md"><span>${internship.title}</span></div>` : '';
+                    if (!internship) return '';
+                    // RE-ADDED: "Issue Certificate" button
+                    return `
+                        <div class="mt-2 p-2 bg-indigo-50 rounded-md flex justify-between items-center">
+                            <span>${internship.title}</span>
+                            <button data-user-id="${user.uid}" data-internship-id="${internshipId}" data-internship-title="${internship.title}" class="issue-cert-btn bg-green-500 text-white text-sm py-1 px-3 rounded hover:bg-green-600">Issue Certificate</button>
+                        </div>
+                    `;
                 }).join('');
             }
 
@@ -301,7 +311,7 @@
 
             allUsersData = [];
             usersSnapshot.forEach(userDoc => {
-                const user = userDoc.data();
+                const user = {...userDoc.data(), uid: userDoc.id}; // Ensure UID is part of the object
                 if (user.role !== 'admin') {
                     allUsersData.push(user);
                 }
@@ -311,6 +321,18 @@
         } catch (error) {
             console.error("Error loading users:", error);
             usersList.innerHTML = `<p class="text-red-500">Failed to load users: ${error.message}</p>`;
+        }
+    }
+    
+    async function issueCertificate(userId, internshipId, internshipTitle) {
+        try {
+            const certId = `SKLX-${new Date().getFullYear()}-${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
+            const certRef = doc(db, "certificates", certId);
+            await setDoc(certRef, { certId, uid: userId, internshipId, internshipTitle, issueDate: new Date(), status: 'valid' });
+            showMessage(`Certificate ${certId} issued successfully!`);
+        } catch (error) {
+            console.error("Error issuing certificate:", error);
+            showMessage("Failed to issue certificate.", true);
         }
     }
 
@@ -372,9 +394,20 @@
                 target.textContent = 'Save Links';
             }
         }
+        
+        // RE-ADDED: Event listener for issuing certificates
+        if (target.classList.contains('issue-cert-btn')) {
+            const { userId, internshipId, internshipTitle } = target.dataset;
+            target.disabled = true;
+            target.textContent = 'Issuing...';
+            issueCertificate(userId, internshipId, internshipTitle).finally(() => {
+                 target.textContent = 'Certificate Issued';
+                 target.classList.remove('bg-green-500', 'hover:bg-green-600');
+                 target.classList.add('bg-gray-400', 'cursor-not-allowed');
+            });
+        }
     });
     
-    // CORRECTED: Added full implementation for the remaining event listeners
     internshipForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const submitBtn = document.getElementById('add-internship-btn');
