@@ -189,7 +189,36 @@
     }
     
     async function loadInternships() {
-        // ... (This function is correct and remains unchanged)
+        internshipsList.innerHTML = '<p>Loading internships...</p>';
+        try {
+            const querySnapshot = await getDocs(collection(db, "internships"));
+            internshipsList.innerHTML = '';
+            if (querySnapshot.empty) {
+                internshipsList.innerHTML = '<p>No internships found.</p>';
+            }
+            querySnapshot.forEach((doc) => {
+                const internship = doc.data();
+                const internshipEl = document.createElement('div');
+                internshipEl.className = 'border p-4 rounded-lg flex justify-between items-center bg-gray-50';
+                internshipEl.innerHTML = `
+                    <div class="flex items-center gap-4">
+                        <img src="${internship.logoUrl || 'https://placehold.co/60x60/e0e7ff/4f46e5?text=Logo'}" alt="logo" class="w-12 h-12 rounded-md object-cover">
+                        <div>
+                            <h3 class="text-xl font-bold">${internship.title}</h3>
+                            <p class="text-gray-600">${internship.domain}</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button data-id="${doc.id}" class="modify-btn bg-blue-500 text-white py-1 px-3 rounded hover:bg-blue-600">Modify</button>
+                        <button data-id="${doc.id}" class="delete-btn bg-red-500 text-white py-1 px-3 rounded hover:bg-red-600">Delete</button>
+                    </div>
+                `;
+                internshipsList.appendChild(internshipEl);
+            });
+        } catch (error) {
+            console.error("Error loading internships:", error);
+            internshipsList.innerHTML = '<p class="text-red-500">Failed to load internships.</p>';
+        }
     }
 
     function renderUsers(usersToRender, internshipsMap) {
@@ -258,14 +287,12 @@
     async function loadUsersAndApplications() {
         usersList.innerHTML = '<p>Loading users...</p>';
         try {
-            // 1. Fetch all data in parallel
             const [usersSnapshot, internshipsSnapshot, applicationsSnapshot] = await Promise.all([
                 getDocs(collection(db, "users")),
                 getDocs(collection(db, "internships")),
                 getDocs(collection(db, "applications"))
             ]);
             
-            // 2. Create maps for easy lookup
             const internshipsMap = new Map();
             internshipsSnapshot.forEach(doc => internshipsMap.set(doc.id, doc.data()));
 
@@ -276,7 +303,6 @@
                 }
             });
 
-            // 3. Group applications by user
             applicationsSnapshot.forEach(appDoc => {
                 const appData = appDoc.data();
                 if (usersMap.has(appData.userId)) {
@@ -301,7 +327,7 @@
         }
     });
 
-    // --- EVENT LISTENERS ---
+    // --- EVENT LISTENERS (ALL FULLY IMPLEMENTED) ---
 
     userSearchInput.addEventListener('keyup', () => {
         const searchTerm = userSearchInput.value.toLowerCase();
@@ -311,7 +337,7 @@
             return name.includes(searchTerm) || email.includes(searchTerm);
         });
         
-        const internshipsMap = new Map(); // Re-create map for rendering
+        const internshipsMap = new Map();
         getDocs(collection(db, "internships")).then(snapshot => {
             snapshot.forEach(doc => internshipsMap.set(doc.id, doc.data()));
             renderUsers(filteredUsers, internshipsMap);
@@ -354,9 +380,83 @@
         }
     });
     
-    // ... (Other listeners like internshipForm, modifyForm, etc. remain unchanged)
-    // You can copy the full implementation of these from the previous correct version.
+    internshipForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const submitBtn = document.getElementById('add-internship-btn');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Adding...';
+        try {
+            await addDoc(collection(db, "internships"), {
+                title: document.getElementById('title').value,
+                description: document.getElementById('description').value,
+                domain: document.getElementById('domain').value,
+                logoUrl: document.getElementById('logoUrl').value,
+                createdAt: new Date()
+            });
+            showMessage('Internship added successfully!');
+            internshipForm.reset();
+            loadInternships();
+        } catch (error) {
+            console.error("Error adding internship:", error);
+            showMessage('Error adding internship.', true);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Add Internship';
+        }
+    });
+
+    internshipsList.addEventListener('click', async (e) => {
+        const target = e.target;
+        const internshipId = target.dataset.id;
+
+        if (target.classList.contains('delete-btn')) {
+            if (confirm('Are you sure you want to delete this internship?')) {
+                try {
+                    await deleteDoc(doc(db, "internships", internshipId));
+                    showMessage('Internship deleted.');
+                    loadInternships();
+                } catch (error) {
+                    showMessage('Error deleting internship.', true);
+                }
+            }
+        }
+
+        if (target.classList.contains('modify-btn')) {
+            const docRef = doc(db, "internships", internshipId);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                document.getElementById('modify-internship-id').value = internshipId;
+                document.getElementById('modify-title').value = data.title;
+                document.getElementById('modify-description').value = data.description;
+                document.getElementById('modify-domain').value = data.domain;
+                document.getElementById('modify-logoUrl').value = data.logoUrl || '';
+                modifyModal.classList.remove('hidden');
+            }
+        }
+    });
     
+    modifyForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const internshipId = document.getElementById('modify-internship-id').value;
+        const docRef = doc(db, "internships", internshipId);
+        try {
+            await updateDoc(docRef, {
+                title: document.getElementById('modify-title').value,
+                description: document.getElementById('modify-description').value,
+                domain: document.getElementById('modify-domain').value,
+                logoUrl: document.getElementById('modify-logoUrl').value
+            });
+            showMessage('Internship updated successfully!');
+            modifyModal.classList.add('hidden');
+            loadInternships();
+        } catch (error) {
+            showMessage('Failed to update internship.', true);
+        }
+    });
+
+    closeModalBtn.addEventListener('click', () => modifyModal.classList.add('hidden'));
+
 </script>
 </body>
 </html>
