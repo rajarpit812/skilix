@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Skilix - My Profile</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.comcom/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -47,12 +47,24 @@
                                     <input type="text" id="full-name" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                 </div>
                                 <div>
-                                    <label for="college-name" class="block text-gray-700 font-medium mb-2">College Name</label>
-                                    <input type="text" id="college-name" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                    <label for="father-name" class="block text-gray-700 font-medium mb-2">Father's Name</label>
+                                    <input type="text" id="father-name" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                                <div>
+                                    <label for="dob" class="block text-gray-700 font-medium mb-2">Date of Birth</label>
+                                    <input type="date" id="dob" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                                <div>
+                                    <label for="contact-number" class="block text-gray-700 font-medium mb-2">Contact Number</label>
+                                    <input type="tel" id="contact-number" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                 </div>
                                 <div class="sm:col-span-2">
-                                     <label for="contact-number" class="block text-gray-700 font-medium mb-2">Contact Number</label>
-                                    <input type="tel" id="contact-number" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                    <label for="address" class="block text-gray-700 font-medium mb-2">Address</label>
+                                    <textarea id="address" rows="3" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                                </div>
+                                <div class="sm:col-span-2">
+                                    <label for="college-name" class="block text-gray-700 font-medium mb-2">College Name</label>
+                                    <input type="text" id="college-name" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                 </div>
                             </div>
                             <div class="mt-8 text-right">
@@ -89,7 +101,7 @@
 
     <footer class="bg-gray-800 text-white py-8 mt-12">
         <div class="container mx-auto px-6 text-center">
-            <p>&copy; 2024 Skilix. All Rights Reserved.</p>
+            <p>&copy; 2025 Skilix. All Rights Reserved.</p>
         </div>
     </footer>
 
@@ -121,20 +133,16 @@
             }, 2500);
         };
 
-        // --- MAIN AUTHENTICATION & DATA HANDLING ---
         onAuthStateChanged(auth, user => {
             if (user) {
-                // --- USER IS LOGGED IN ---
                 const userDocRef = doc(db, "users", user.uid);
                 
-                // --- A) FETCH & DISPLAY USER PROFILE ---
                 const loadUserProfile = async () => {
                     const docSnap = await getDoc(userDocRef);
                     if (docSnap.exists()) {
                         const data = docSnap.data();
                         const displayName = data.fullName || data.name || user.displayName || 'New User';
 
-                        // Show admin link if user is an admin
                         if (data.role === 'admin') {
                             document.getElementById('admin-link').classList.remove('hidden');
                         }
@@ -143,23 +151,29 @@
                         document.getElementById('user-email-display').textContent = user.email;
                         document.getElementById('user-avatar').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=e0e7ff&color=4f46e5`;
 
+                        // Populate all form fields, including new ones
                         document.getElementById('full-name').value = data.fullName || data.name || '';
-                        document.getElementById('college-name').value = data.collegeName || '';
+                        document.getElementById('father-name').value = data.fatherName || '';
+                        document.getElementById('dob').value = data.dob || '';
                         document.getElementById('contact-number').value = data.contactNumber || '';
+                        document.getElementById('address').value = data.address || '';
+                        document.getElementById('college-name').value = data.collegeName || '';
                     } else {
-                        console.log("No profile data found for new user.");
                         document.getElementById('user-name-display').textContent = user.displayName || 'New User';
                         document.getElementById('user-email-display').textContent = user.email;
                     }
                 };
                 
-                // --- B) SAVE USER PROFILE ---
                 document.getElementById('profile-form').addEventListener('submit', async (e) => {
                     e.preventDefault();
+                    // Create object with all form data, including new fields
                     const profileData = {
                         fullName: document.getElementById('full-name').value,
-                        collegeName: document.getElementById('college-name').value,
+                        fatherName: document.getElementById('father-name').value,
+                        dob: document.getElementById('dob').value,
                         contactNumber: document.getElementById('contact-number').value,
+                        address: document.getElementById('address').value,
+                        collegeName: document.getElementById('college-name').value,
                     };
                     try {
                         await setDoc(userDocRef, profileData, { merge: true });
@@ -170,15 +184,12 @@
                     }
                 });
 
-                // --- C) NEW: LOAD APPLIED INTERNSHIPS ---
                 const loadAppliedInternships = async (uid) => {
                     const listEl = document.getElementById('applied-internships-list');
                     const userDocSnap = await getDoc(doc(db, "users", uid));
-
                     if (userDocSnap.exists() && userDocSnap.data().appliedInternships?.length > 0) {
                         const internshipIds = userDocSnap.data().appliedInternships;
-                        listEl.innerHTML = ''; // Clear loading message
-
+                        listEl.innerHTML = ''; 
                         for (const internshipId of internshipIds) {
                             const internshipDocSnap = await getDoc(doc(db, "internships", internshipId));
                             if (internshipDocSnap.exists()) {
@@ -194,16 +205,12 @@
                     }
                 };
 
-                // --- D) NEW: LOAD CERTIFICATES ---
                 const loadCertificates = async (uid) => {
                     const listEl = document.getElementById('certificates-list');
-                    const certsRef = collection(db, "certificates");
-                    const q = query(certsRef, where("uid", "==", uid));
-                    
+                    const q = query(collection(db, "certificates"), where("uid", "==", uid));
                     const querySnapshot = await getDocs(q);
-                    
                     if (!querySnapshot.empty) {
-                        listEl.innerHTML = ''; // Clear loading message
+                        listEl.innerHTML = '';
                         querySnapshot.forEach((doc) => {
                             const cert = doc.data();
                             const itemEl = document.createElement('div');
@@ -225,24 +232,17 @@
                     }
                 };
 
-                // --- INITIALIZE PAGE DATA ---
                 loadUserProfile();
                 loadAppliedInternships(user.uid);
                 loadCertificates(user.uid);
-
             } else {
-                // --- USER IS LOGGED OUT ---
-                // NEW: Redirect to homepage if not logged in
                 window.location.href = 'index.html';
             }
         });
 
-        // --- LOGOUT BUTTON ---
         document.getElementById('logout-btn').addEventListener('click', () => {
             signOut(auth).catch((error) => console.error('Sign out error', error));
-            // The onAuthStateChanged listener will handle the redirect
         });
-
     </script>
 </body>
 </html>
