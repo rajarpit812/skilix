@@ -121,7 +121,6 @@
         </div>
     </div>
 
-    <!-- Access Denied Message -->
     <div id="access-denied" class="hidden text-center p-16">
         <h1 class="text-4xl font-bold text-red-600">Access Denied</h1>
         <p class="text-xl mt-4">You do not have permission to view this page.</p>
@@ -235,14 +234,30 @@
             const detailsId = `details-${user.uid}`;
 
             let applicationsHtml = '<p class="text-gray-500">No applications yet.</p>';
-            if (user.appliedInternships && user.appliedInternships.length > 0) {
-                applicationsHtml = user.appliedInternships.map(internshipId => {
-                    const internship = internshipsMap.get(internshipId);
+            if (Array.isArray(user.appliedInternships) && user.appliedInternships.length > 0) {
+                applicationsHtml = user.appliedInternships.map((application, index) => {
+                    const internship = internshipsMap.get(application.internshipId);
                     if (!internship) return '';
+                    
                     return `
-                        <div class="mt-2 p-2 bg-indigo-50 rounded-md flex justify-between items-center">
-                            <span>${internship.title}</span>
-                            <button data-user-id="${user.uid}" data-internship-id="${internshipId}" data-internship-title="${internship.title}" class="issue-cert-btn bg-green-500 text-white text-sm py-1 px-3 rounded hover:bg-green-600">Issue Certificate</button>
+                        <div class="mt-4 pt-4 border-t">
+                            <div class="flex justify-between items-center">
+                                <h5 class="font-semibold">${internship.title}</h5>
+                                <button data-user-id="${user.uid}" data-internship-id="${application.internshipId}" data-internship-title="${internship.title}" class="issue-cert-btn bg-green-500 text-white text-sm py-1 px-3 rounded hover:bg-green-600">Issue Certificate</button>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Offer Letter URL</label>
+                                    <input type="url" id="offer-${user.uid}-${index}" value="${application.offerLetterUrl || ''}" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Certificate URL</label>
+                                    <input type="url" id="cert-${user.uid}-${index}" value="${application.certificateUrl || ''}" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm">
+                                </div>
+                            </div>
+                             <div class="text-right mt-2">
+                                <button data-user-id="${user.uid}" data-internship-id="${application.internshipId}" data-index="${index}" class="save-links-btn bg-blue-500 text-white text-sm py-1 px-3 rounded hover:bg-blue-600">Save Links for this Internship</button>
+                            </div>
                         </div>
                     `;
                 }).join('');
@@ -267,22 +282,6 @@
                         <p><strong>DOB:</strong> ${user.dob || 'N/A'}</p>
                         <p><strong>Father's Name:</strong> ${user.fatherName || 'N/A'}</p>
                     </div>
-
-                    <h4 class="font-semibold mt-4 mb-2">Upload Documents:</h4>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Offer Letter URL</label>
-                            <input type="url" id="offer-${user.uid}" value="${user.offerLetterUrl || ''}" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Certificate URL</label>
-                            <input type="url" id="cert-${user.uid}" value="${user.certificateUrl || ''}" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm">
-                        </div>
-                    </div>
-                    <div class="text-right mt-2">
-                        <button data-user-id="${user.uid}" class="save-links-btn bg-green-500 text-white text-sm py-1 px-3 rounded hover:bg-green-600">Save Links</button>
-                    </div>
-
                     <h4 class="font-semibold mt-4">Applied Internships:</h4>
                     ${applicationsHtml}
                 </div>
@@ -363,26 +362,37 @@
         }
 
         if (target.classList.contains('save-links-btn')) {
-            const userId = target.dataset.userId;
+            const { userId, internshipId, index } = target.dataset;
             target.disabled = true;
             target.textContent = 'Saving...';
             
-            const offerUrl = document.getElementById(`offer-${userId}`).value;
-            const certUrl = document.getElementById(`cert-${userId}`).value;
+            const offerUrl = document.getElementById(`offer-${userId}-${index}`).value;
+            const certUrl = document.getElementById(`cert-${userId}-${index}`).value;
 
             try {
                 const userDocRef = doc(db, "users", userId);
-                await updateDoc(userDocRef, {
-                    offerLetterUrl: offerUrl,
-                    certificateUrl: certUrl
-                });
-                showMessage('Links saved successfully!');
+                const userDoc = await getDoc(userDocRef);
+                if (userDoc.exists()) {
+                    const userData = userDoc.data();
+                    const updatedApplications = [...userData.appliedInternships];
+                    
+                    const appIndex = updatedApplications.findIndex(app => app.internshipId === internshipId);
+                    if(appIndex > -1) {
+                        updatedApplications[appIndex].offerLetterUrl = offerUrl;
+                        updatedApplications[appIndex].certificateUrl = certUrl;
+                    }
+
+                    await updateDoc(userDocRef, {
+                        appliedInternships: updatedApplications
+                    });
+                    showMessage('Links saved successfully!');
+                }
             } catch (error) {
                 console.error("Error saving links:", error);
                 showMessage(`Failed to save links: ${error.code}`, true);
             } finally {
                 target.disabled = false;
-                target.textContent = 'Save Links';
+                target.textContent = 'Save Links for this Internship';
             }
         }
         
