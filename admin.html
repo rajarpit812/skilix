@@ -60,7 +60,12 @@
                         <label for="domain" class="block text-gray-700 font-medium mb-2">Domain (e.g., Web Development)</label>
                         <input type="text" id="domain" class="w-full px-4 py-2 border rounded-lg" required>
                     </div>
-                    <button type="submit" class="bg-indigo-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-indigo-700">
+                    <!-- NEW: Upload Logo -->
+                    <div class="mb-4">
+                        <label for="logo" class="block text-gray-700 font-medium mb-2">Internship Logo</label>
+                        <input type="file" id="logo" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                    </div>
+                    <button type="submit" id="add-internship-btn" class="bg-indigo-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-indigo-700">
                         Add Internship
                     </button>
                 </form>
@@ -84,6 +89,34 @@
         </main>
     </div>
 
+    <!-- NEW: Modify Internship Modal -->
+    <div id="modify-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-lg relative">
+            <button id="close-modal-btn" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800">&times;</button>
+            <h2 class="text-2xl font-semibold mb-4">Modify Internship</h2>
+            <form id="modify-internship-form">
+                <input type="hidden" id="modify-internship-id">
+                <div class="mb-4">
+                    <label for="modify-title" class="block text-gray-700 font-medium mb-2">Internship Title</label>
+                    <input type="text" id="modify-title" class="w-full px-4 py-2 border rounded-lg" required>
+                </div>
+                <div class="mb-4">
+                    <label for="modify-description" class="block text-gray-700 font-medium mb-2">Description</label>
+                    <textarea id="modify-description" rows="4" class="w-full px-4 py-2 border rounded-lg" required></textarea>
+                </div>
+                <div class="mb-4">
+                    <label for="modify-domain" class="block text-gray-700 font-medium mb-2">Domain</label>
+                    <input type="text" id="modify-domain" class="w-full px-4 py-2 border rounded-lg" required>
+                </div>
+                <div class="text-right">
+                    <button type="submit" class="bg-indigo-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-indigo-700">
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Access Denied Message -->
     <div id="access-denied" class="hidden text-center p-16">
         <h1 class="text-4xl font-bold text-red-600">Access Denied</h1>
@@ -97,7 +130,9 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { getFirestore, doc, getDoc, collection, addDoc, getDocs, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, collection, addDoc, getDocs, deleteDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    // NEW: Import Firebase Storage modules
+    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyBrP14baJEyuYYt5xOUt4SeSeUFM3RY2rk",
@@ -112,13 +147,18 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
+    const storage = getStorage(app); // NEW: Initialize Storage
 
+    // DOM Elements
     const adminDashboard = document.getElementById('admin-dashboard');
     const accessDenied = document.getElementById('access-denied');
     const internshipForm = document.getElementById('internship-form');
     const internshipsList = document.getElementById('internships-list');
     const usersList = document.getElementById('users-list');
     const messageBox = document.getElementById('message-box');
+    const modifyModal = document.getElementById('modify-modal');
+    const modifyForm = document.getElementById('modify-internship-form');
+    const closeModalBtn = document.getElementById('close-modal-btn');
 
     function showMessage(message, isError = false) {
         messageBox.textContent = message;
@@ -135,10 +175,8 @@
             accessDenied.classList.remove('hidden');
             return false;
         }
-
         const userDocRef = doc(db, "users", user.uid);
         const userDoc = await getDoc(userDocRef);
-
         if (userDoc.exists() && userDoc.data().role === 'admin') {
             document.getElementById('admin-name').textContent = `Welcome, ${userDoc.data().name || user.displayName}`;
             adminDashboard.classList.remove('hidden');
@@ -163,11 +201,17 @@
             const internshipEl = document.createElement('div');
             internshipEl.className = 'border p-4 rounded-lg flex justify-between items-center bg-gray-50';
             internshipEl.innerHTML = `
-                <div>
-                    <h3 class="text-xl font-bold">${internship.title}</h3>
-                    <p class="text-gray-600">${internship.domain}</p>
+                <div class="flex items-center gap-4">
+                    <img src="${internship.logoUrl || 'https://placehold.co/60x60/e0e7ff/4f46e5?text=Logo'}" alt="logo" class="w-12 h-12 rounded-md object-cover">
+                    <div>
+                        <h3 class="text-xl font-bold">${internship.title}</h3>
+                        <p class="text-gray-600">${internship.domain}</p>
+                    </div>
                 </div>
-                <button data-id="${doc.id}" class="delete-btn bg-red-500 text-white py-1 px-3 rounded hover:bg-red-600">Delete</button>
+                <div class="flex gap-2">
+                    <button data-id="${doc.id}" class="modify-btn bg-blue-500 text-white py-1 px-3 rounded hover:bg-blue-600">Modify</button>
+                    <button data-id="${doc.id}" class="delete-btn bg-red-500 text-white py-1 px-3 rounded hover:bg-red-600">Delete</button>
+                </div>
             `;
             internshipsList.appendChild(internshipEl);
         });
@@ -191,7 +235,7 @@
 
         usersSnapshot.forEach(userDoc => {
             const user = userDoc.data();
-            if (user.role === 'admin') return; // Don't show admin in the user list
+            if (user.role === 'admin') return;
 
             const userEl = document.createElement('div');
             userEl.className = 'border p-4 rounded-lg bg-white';
@@ -243,16 +287,7 @@
         try {
             const certId = `SKLX-${new Date().getFullYear()}-${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
             const certRef = doc(db, "certificates", certId);
-
-            await setDoc(certRef, {
-                certId: certId,
-                uid: userId,
-                internshipId: internshipId,
-                internshipTitle: internshipTitle,
-                issueDate: new Date(),
-                status: 'valid'
-            });
-
+            await setDoc(certRef, { certId, uid: userId, internshipId, internshipTitle, issueDate: new Date(), status: 'valid' });
             showMessage(`Certificate ${certId} issued successfully!`);
         } catch (error) {
             console.error("Error issuing certificate:", error);
@@ -268,14 +303,29 @@
         }
     });
 
+    // --- EVENT LISTENERS ---
+
+    // Handle Create Internship Form Submission
     internshipForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+        const submitBtn = document.getElementById('add-internship-btn');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Adding...';
+
         const title = document.getElementById('title').value;
         const description = document.getElementById('description').value;
         const domain = document.getElementById('domain').value;
+        const logoFile = document.getElementById('logo').files[0];
+        let logoUrl = '';
 
         try {
-            await addDoc(collection(db, "internships"), { title, description, domain, createdAt: new Date() });
+            if (logoFile) {
+                const storageRef = ref(storage, `internship-logos/${Date.now()}-${logoFile.name}`);
+                const snapshot = await uploadBytes(storageRef, logoFile);
+                logoUrl = await getDownloadURL(snapshot.ref);
+            }
+
+            await addDoc(collection(db, "internships"), { title, description, domain, logoUrl, createdAt: new Date() });
             showMessage('Internship added successfully!');
             internshipForm.reset();
             loadInternships();
@@ -283,12 +333,18 @@
         } catch (error) {
             console.error("Error adding internship:", error);
             showMessage('Error adding internship. Check console for details.', true);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Add Internship';
         }
     });
 
+    // Handle Manage Internships Buttons (Modify & Delete)
     internshipsList.addEventListener('click', async (e) => {
-        if (e.target.classList.contains('delete-btn')) {
-            const internshipId = e.target.dataset.id;
+        const target = e.target;
+        const internshipId = target.dataset.id;
+
+        if (target.classList.contains('delete-btn')) {
             if (confirm('Are you sure you want to delete this internship?')) {
                 try {
                     await deleteDoc(doc(db, "internships", internshipId));
@@ -301,8 +357,44 @@
                 }
             }
         }
+
+        if (target.classList.contains('modify-btn')) {
+            const docRef = doc(db, "internships", internshipId);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                document.getElementById('modify-internship-id').value = internshipId;
+                document.getElementById('modify-title').value = data.title;
+                document.getElementById('modify-description').value = data.description;
+                document.getElementById('modify-domain').value = data.domain;
+                modifyModal.classList.remove('hidden');
+            }
+        }
     });
 
+    // Handle Modify Form Submission
+    modifyForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const internshipId = document.getElementById('modify-internship-id').value;
+        const docRef = doc(db, "internships", internshipId);
+
+        try {
+            await updateDoc(docRef, {
+                title: document.getElementById('modify-title').value,
+                description: document.getElementById('modify-description').value,
+                domain: document.getElementById('modify-domain').value,
+            });
+            showMessage('Internship updated successfully!');
+            modifyModal.classList.add('hidden');
+            loadInternships();
+            loadUsersAndApplications();
+        } catch (error) {
+            console.error("Error updating internship:", error);
+            showMessage('Failed to update internship.', true);
+        }
+    });
+
+    // Handle Users List Buttons
     usersList.addEventListener('click', (e) => {
         if (e.target.classList.contains('issue-cert-btn')) {
             const { userId, internshipId, internshipTitle } = e.target.dataset;
@@ -324,6 +416,9 @@
             }
         }
     });
+    
+    // Close Modal Listener
+    closeModalBtn.addEventListener('click', () => modifyModal.classList.add('hidden'));
 
 </script>
 </body>
