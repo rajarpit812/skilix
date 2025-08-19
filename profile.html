@@ -43,28 +43,45 @@
                         <form id="profile-form">
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                 <div>
-                                    <label for="full-name" class="block text-gray-700 font-medium mb-2">Full Name</label>
-                                    <input type="text" id="full-name" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                    <label for="fullName" class="block text-gray-700 font-medium mb-2">Full Name</label>
+                                    <input type="text" id="fullName" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                 </div>
                                 <div>
-                                    <label for="father-name" class="block text-gray-700 font-medium mb-2">Father's Name</label>
-                                    <input type="text" id="father-name" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                    <label for="fatherName" class="block text-gray-700 font-medium mb-2">Father's Name</label>
+                                    <input type="text" id="fatherName" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                 </div>
                                 <div>
                                     <label for="dob" class="block text-gray-700 font-medium mb-2">Date of Birth</label>
                                     <input type="date" id="dob" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                 </div>
                                 <div>
-                                    <label for="contact-number" class="block text-gray-700 font-medium mb-2">Contact Number</label>
-                                    <input type="tel" id="contact-number" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                    <label for="age" class="block text-gray-700 font-medium mb-2">Age</label>
+                                    <input type="number" id="age" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                                 <div>
+                                    <label for="gender" class="block text-gray-700 font-medium mb-2">Gender</label>
+                                    <select id="gender" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                        <option value="">Select...</option>
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="contactNumber" class="block text-gray-700 font-medium mb-2">Contact Number</label>
+                                    <input type="tel" id="contactNumber" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                                <div>
+                                    <label for="country" class="block text-gray-700 font-medium mb-2">Country</label>
+                                    <input type="text" id="country" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                                <div>
+                                    <label for="city" class="block text-gray-700 font-medium mb-2">City</label>
+                                    <input type="text" id="city" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                 </div>
                                 <div class="sm:col-span-2">
-                                    <label for="address" class="block text-gray-700 font-medium mb-2">Address</label>
-                                    <textarea id="address" rows="3" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
-                                </div>
-                                <div class="sm:col-span-2">
-                                    <label for="college-name" class="block text-gray-700 font-medium mb-2">College Name</label>
-                                    <input type="text" id="college-name" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                    <label for="collegeName" class="block text-gray-700 font-medium mb-2">College Name</label>
+                                    <input type="text" id="collegeName" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                 </div>
                             </div>
                             <div class="mt-8 text-right">
@@ -151,13 +168,16 @@
                         document.getElementById('user-email-display').textContent = user.email;
                         document.getElementById('user-avatar').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=e0e7ff&color=4f46e5`;
 
-                        // Populate all form fields, including new ones
-                        document.getElementById('full-name').value = data.fullName || data.name || '';
-                        document.getElementById('father-name').value = data.fatherName || '';
+                        // Populate all form fields from Firestore data
+                        document.getElementById('fullName').value = data.fullName || data.name || '';
+                        document.getElementById('fatherName').value = data.fatherName || '';
                         document.getElementById('dob').value = data.dob || '';
-                        document.getElementById('contact-number').value = data.contactNumber || '';
-                        document.getElementById('address').value = data.address || '';
-                        document.getElementById('college-name').value = data.collegeName || '';
+                        document.getElementById('age').value = data.age || '';
+                        document.getElementById('gender').value = data.gender || '';
+                        document.getElementById('contactNumber').value = data.contactNumber || '';
+                        document.getElementById('country').value = data.country || '';
+                        document.getElementById('city').value = data.city || '';
+                        document.getElementById('collegeName').value = data.collegeName || '';
                     } else {
                         document.getElementById('user-name-display').textContent = user.displayName || 'New User';
                         document.getElementById('user-email-display').textContent = user.email;
@@ -166,14 +186,19 @@
                 
                 document.getElementById('profile-form').addEventListener('submit', async (e) => {
                     e.preventDefault();
-                    // Create object with all form data, including new fields
+                    // Create object with all form data to save
                     const profileData = {
-                        fullName: document.getElementById('full-name').value,
-                        fatherName: document.getElementById('father-name').value,
+                        fullName: document.getElementById('fullName').value,
+                        name: document.getElementById('fullName').value, // Also update 'name' for consistency
+                        fatherName: document.getElementById('fatherName').value,
                         dob: document.getElementById('dob').value,
-                        contactNumber: document.getElementById('contact-number').value,
-                        address: document.getElementById('address').value,
-                        collegeName: document.getElementById('college-name').value,
+                        age: document.getElementById('age').value,
+                        gender: document.getElementById('gender').value,
+                        email: user.email, // Save email to the document
+                        contactNumber: document.getElementById('contactNumber').value,
+                        country: document.getElementById('country').value,
+                        city: document.getElementById('city').value,
+                        collegeName: document.getElementById('collegeName').value,
                     };
                     try {
                         await setDoc(userDocRef, profileData, { merge: true });
