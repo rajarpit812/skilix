@@ -262,8 +262,11 @@
             showMessage('Internship added successfully!');
             internshipForm.reset();
             loadInternships();
+            loadUsersAndApplications(); // Refresh users list after adding
         } catch (error) {
-            showMessage('Error adding internship.', true);
+            // UPDATED: Log the specific error to the console for debugging
+            console.error("Error adding internship:", error);
+            showMessage('Error adding internship. Check console for details.', true);
         }
     });
 
@@ -277,6 +280,7 @@
                     loadInternships();
                     loadUsersAndApplications(); // Refresh users to remove deleted internship from their list
                 } catch (error) {
+                    console.error("Error deleting internship:", error);
                     showMessage('Error deleting internship.', true);
                 }
             }
