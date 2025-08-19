@@ -60,10 +60,10 @@
                         <label for="domain" class="block text-gray-700 font-medium mb-2">Domain (e.g., Web Development)</label>
                         <input type="text" id="domain" class="w-full px-4 py-2 border rounded-lg" required>
                     </div>
-                    <!-- NEW: Upload Logo -->
+                    <!-- UPDATED: Logo URL Input -->
                     <div class="mb-4">
-                        <label for="logo" class="block text-gray-700 font-medium mb-2">Internship Logo</label>
-                        <input type="file" id="logo" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                        <label for="logoUrl" class="block text-gray-700 font-medium mb-2">Logo URL</label>
+                        <input type="url" id="logoUrl" placeholder="https://res.cloudinary.com/..." class="w-full px-4 py-2 border rounded-lg">
                     </div>
                     <button type="submit" id="add-internship-btn" class="bg-indigo-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-indigo-700">
                         Add Internship
@@ -89,10 +89,10 @@
         </main>
     </div>
 
-    <!-- NEW: Modify Internship Modal -->
+    <!-- Modify Internship Modal -->
     <div id="modify-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-lg relative">
-            <button id="close-modal-btn" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800">&times;</button>
+            <button id="close-modal-btn" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-2xl font-bold">&times;</button>
             <h2 class="text-2xl font-semibold mb-4">Modify Internship</h2>
             <form id="modify-internship-form">
                 <input type="hidden" id="modify-internship-id">
@@ -107,6 +107,11 @@
                 <div class="mb-4">
                     <label for="modify-domain" class="block text-gray-700 font-medium mb-2">Domain</label>
                     <input type="text" id="modify-domain" class="w-full px-4 py-2 border rounded-lg" required>
+                </div>
+                <!-- UPDATED: Modify Logo URL -->
+                 <div class="mb-4">
+                    <label for="modify-logoUrl" class="block text-gray-700 font-medium mb-2">Logo URL</label>
+                    <input type="url" id="modify-logoUrl" class="w-full px-4 py-2 border rounded-lg">
                 </div>
                 <div class="text-right">
                     <button type="submit" class="bg-indigo-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-indigo-700">
@@ -131,8 +136,6 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import { getFirestore, doc, getDoc, collection, addDoc, getDocs, deleteDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-    // NEW: Import Firebase Storage modules
-    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyBrP14baJEyuYYt5xOUt4SeSeUFM3RY2rk",
@@ -147,7 +150,6 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
-    const storage = getStorage(app); // NEW: Initialize Storage
 
     // DOM Elements
     const adminDashboard = document.getElementById('admin-dashboard');
@@ -202,7 +204,7 @@
             internshipEl.className = 'border p-4 rounded-lg flex justify-between items-center bg-gray-50';
             internshipEl.innerHTML = `
                 <div class="flex items-center gap-4">
-                    <img src="${internship.logoUrl || 'https://placehold.co/60x60/e0e7ff/4f46e5?text=Logo'}" alt="logo" class="w-12 h-12 rounded-md object-cover">
+                    <img src="${internship.logoUrl || 'https://placehold.co/60x60/e0e7ff/4f46e5?text=Logo'}" alt="logo" class="w-12 h-12 rounded-md object-cover" onerror="this.onerror=null;this.src='https://placehold.co/60x60/e0e7ff/4f46e5?text=Error';">
                     <div>
                         <h3 class="text-xl font-bold">${internship.title}</h3>
                         <p class="text-gray-600">${internship.domain}</p>
@@ -312,20 +314,14 @@
         submitBtn.disabled = true;
         submitBtn.textContent = 'Adding...';
 
-        const title = document.getElementById('title').value;
-        const description = document.getElementById('description').value;
-        const domain = document.getElementById('domain').value;
-        const logoFile = document.getElementById('logo').files[0];
-        let logoUrl = '';
-
         try {
-            if (logoFile) {
-                const storageRef = ref(storage, `internship-logos/${Date.now()}-${logoFile.name}`);
-                const snapshot = await uploadBytes(storageRef, logoFile);
-                logoUrl = await getDownloadURL(snapshot.ref);
-            }
-
-            await addDoc(collection(db, "internships"), { title, description, domain, logoUrl, createdAt: new Date() });
+            await addDoc(collection(db, "internships"), {
+                title: document.getElementById('title').value,
+                description: document.getElementById('description').value,
+                domain: document.getElementById('domain').value,
+                logoUrl: document.getElementById('logoUrl').value, // Get URL from input
+                createdAt: new Date()
+            });
             showMessage('Internship added successfully!');
             internshipForm.reset();
             loadInternships();
@@ -367,6 +363,7 @@
                 document.getElementById('modify-title').value = data.title;
                 document.getElementById('modify-description').value = data.description;
                 document.getElementById('modify-domain').value = data.domain;
+                document.getElementById('modify-logoUrl').value = data.logoUrl || ''; // Populate logo URL
                 modifyModal.classList.remove('hidden');
             }
         }
@@ -383,6 +380,7 @@
                 title: document.getElementById('modify-title').value,
                 description: document.getElementById('modify-description').value,
                 domain: document.getElementById('modify-domain').value,
+                logoUrl: document.getElementById('modify-logoUrl').value // Save updated logo URL
             });
             showMessage('Internship updated successfully!');
             modifyModal.classList.add('hidden');
