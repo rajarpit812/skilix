@@ -17,6 +17,7 @@
 </head>
 <body class="text-gray-800">
 
+    <!-- Header -->
     <header class="bg-white shadow-sm sticky top-0 z-50">
         <nav class="container mx-auto px-4 py-4 flex items-center justify-between">
             <a href="index.html" class="font-bold text-2xl tracking-tight">Skil<span class="text-indigo-600">ix</span></a>
@@ -29,15 +30,19 @@
         </nav>
     </header>
 
+    <!-- Main Content -->
     <main class="py-12">
         <div class="container mx-auto px-6">
+            <!-- Profile Details Section -->
             <div class="bg-white rounded-lg shadow-xl p-8 md:p-12 border border-gray-200 mb-12">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <!-- Left Column: Profile Picture & Basic Info -->
                     <div class="md:col-span-1 text-center">
                         <img id="user-avatar" src="https://placehold.co/150x150/e0e7ff/4f46e5?text=..." alt="User Avatar" class="h-36 w-36 rounded-full mx-auto object-cover border-4 border-indigo-200">
                         <h2 id="user-name-display" class="text-2xl font-bold text-gray-900 mt-4">Loading...</h2>
                         <p id="user-email-display" class="text-gray-600">Loading...</p>
                     </div>
+                    <!-- Right Column: Personal Information Form -->
                     <div class="md:col-span-2">
                         <h3 class="text-xl font-bold text-gray-800 mb-6 border-b pb-2">Personal Information</h3>
                         <form id="profile-form">
@@ -94,28 +99,25 @@
                 </div>
             </div>
 
+            <!-- Applied Internships Section -->
             <div class="bg-white rounded-lg shadow-xl p-8 md:p-12 border border-gray-200 mb-12">
-                <h2 class="text-2xl font-bold text-gray-900 mb-6">My Applied Internships</h2>
+                <h2 class="text-2xl font-bold text-gray-900 mb-6">My Applications</h2>
                 <div id="applied-internships-list" class="space-y-4">
+                    <!-- Applied internships will be loaded here -->
                     <p>Loading your applications...</p>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-lg shadow-xl p-8 md:p-12 border border-gray-200">
-                <h2 class="text-2xl font-bold text-gray-900 mb-6">My Certificates</h2>
-                <div id="certificates-list" class="space-y-4">
-                    <p>Loading your certificates...</p>
                 </div>
             </div>
         </div>
     </main>
     
+    <!-- Notification Modal -->
     <div id="notification-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 opacity-0 pointer-events-none">
         <div class="bg-white rounded-lg shadow-xl p-6 max-w-sm text-center">
             <p id="notification-message" class="text-lg">Message here</p>
         </div>
     </div>
 
+    <!-- Footer -->
     <footer class="bg-gray-800 text-white py-8 mt-12">
         <div class="container mx-auto px-6 text-center">
             <p>&copy; 2025 Skilix. All Rights Reserved.</p>
@@ -168,7 +170,6 @@
                         document.getElementById('user-email-display').textContent = user.email;
                         document.getElementById('user-avatar').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=e0e7ff&color=4f46e5`;
 
-                        // Populate all form fields from Firestore data
                         document.getElementById('fullName').value = data.fullName || data.name || '';
                         document.getElementById('fatherName').value = data.fatherName || '';
                         document.getElementById('dob').value = data.dob || '';
@@ -186,15 +187,14 @@
                 
                 document.getElementById('profile-form').addEventListener('submit', async (e) => {
                     e.preventDefault();
-                    // Create object with all form data to save
                     const profileData = {
                         fullName: document.getElementById('fullName').value,
-                        name: document.getElementById('fullName').value, // Also update 'name' for consistency
+                        name: document.getElementById('fullName').value,
                         fatherName: document.getElementById('fatherName').value,
                         dob: document.getElementById('dob').value,
                         age: document.getElementById('age').value,
                         gender: document.getElementById('gender').value,
-                        email: user.email, // Save email to the document
+                        email: user.email,
                         contactNumber: document.getElementById('contactNumber').value,
                         country: document.getElementById('country').value,
                         city: document.getElementById('city').value,
@@ -209,57 +209,68 @@
                     }
                 });
 
+                // UPDATED: Function to load applications and documents
                 const loadAppliedInternships = async (uid) => {
                     const listEl = document.getElementById('applied-internships-list');
-                    const userDocSnap = await getDoc(doc(db, "users", uid));
-                    if (userDocSnap.exists() && userDocSnap.data().appliedInternships?.length > 0) {
-                        const internshipIds = userDocSnap.data().appliedInternships;
-                        listEl.innerHTML = ''; 
-                        for (const internshipId of internshipIds) {
-                            const internshipDocSnap = await getDoc(doc(db, "internships", internshipId));
-                            if (internshipDocSnap.exists()) {
-                                const internship = internshipDocSnap.data();
-                                const itemEl = document.createElement('div');
-                                itemEl.className = 'p-4 border rounded-lg bg-gray-50';
-                                itemEl.innerHTML = `<h3 class="font-bold text-lg">${internship.title}</h3><p class="text-gray-600">${internship.domain}</p>`;
-                                listEl.appendChild(itemEl);
-                            }
-                        }
-                    } else {
-                        listEl.innerHTML = '<p>You have not applied for any internships yet.</p>';
-                    }
-                };
+                    listEl.innerHTML = '<p>Loading your applications...</p>';
 
-                const loadCertificates = async (uid) => {
-                    const listEl = document.getElementById('certificates-list');
-                    const q = query(collection(db, "certificates"), where("uid", "==", uid));
-                    const querySnapshot = await getDocs(q);
-                    if (!querySnapshot.empty) {
-                        listEl.innerHTML = '';
-                        querySnapshot.forEach((doc) => {
-                            const cert = doc.data();
+                    try {
+                        // 1. Fetch all internships to get their details
+                        const internshipsSnapshot = await getDocs(collection(db, "internships"));
+                        const internshipsMap = new Map();
+                        internshipsSnapshot.forEach(doc => internshipsMap.set(doc.id, doc.data()));
+
+                        // 2. Fetch applications for the current user
+                        const applicationsRef = collection(db, "applications");
+                        const q = query(applicationsRef, where("userId", "==", uid));
+                        const applicationsSnapshot = await getDocs(q);
+
+                        if (applicationsSnapshot.empty) {
+                            listEl.innerHTML = '<p>You have not applied for any internships yet.</p>';
+                            return;
+                        }
+
+                        listEl.innerHTML = ''; // Clear loading message
+                        applicationsSnapshot.forEach(appDoc => {
+                            const application = appDoc.data();
+                            const internship = internshipsMap.get(application.internshipId);
+                            if (!internship) return;
+
                             const itemEl = document.createElement('div');
-                            itemEl.className = 'p-4 border rounded-lg bg-green-50 flex justify-between items-center';
+                            itemEl.className = 'p-4 border rounded-lg bg-gray-50';
+
+                            let buttonsHtml = '';
+                            if (application.offerLetterUrl) {
+                                buttonsHtml += `<a href="${application.offerLetterUrl}" target="_blank" class="bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-600">View Offer Letter</a>`;
+                            }
+                            if (application.certificateUrl) {
+                                buttonsHtml += `<a href="${application.certificateUrl}" target="_blank" class="bg-green-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-600">View Certificate</a>`;
+                            }
+                            
                             itemEl.innerHTML = `
-                                <div>
-                                    <h3 class="font-bold text-lg">${cert.internshipTitle}</h3>
-                                    <p class="text-sm text-gray-500">Issued on: ${new Date(cert.issueDate.seconds * 1000).toLocaleDateString()}</p>
-                                    <p class="text-sm text-gray-500">Certificate ID: ${cert.certId}</p>
+                                <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
+                                    <div>
+                                        <h3 class="font-bold text-lg">${internship.title}</h3>
+                                        <p class="text-gray-600">${internship.domain}</p>
+                                        <p class="text-sm text-gray-500 mt-1">Applied on: ${new Date(application.appliedAt.seconds * 1000).toLocaleDateString()}</p>
+                                    </div>
+                                    <div class="flex gap-4 mt-4 md:mt-0">
+                                        ${buttonsHtml || '<p class="text-sm text-gray-500">Documents pending.</p>'}
+                                    </div>
                                 </div>
-                                <a href="verify.html?id=${cert.certId}" target="_blank" class="bg-indigo-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-600">
-                                    Verify
-                                </a>
                             `;
                             listEl.appendChild(itemEl);
                         });
-                    } else {
-                        listEl.innerHTML = '<p>You do not have any certificates yet.</p>';
+
+                    } catch (error) {
+                        console.error("Error loading applications:", error);
+                        listEl.innerHTML = '<p class="text-red-500">Could not load your applications.</p>';
                     }
                 };
 
                 loadUserProfile();
                 loadAppliedInternships(user.uid);
-                loadCertificates(user.uid);
+
             } else {
                 window.location.href = 'index.html';
             }
@@ -268,6 +279,7 @@
         document.getElementById('logout-btn').addEventListener('click', () => {
             signOut(auth).catch((error) => console.error('Sign out error', error));
         });
+
     </script>
 </body>
 </html>
