@@ -191,8 +191,10 @@
 
         usersSnapshot.forEach(userDoc => {
             const user = userDoc.data();
+            if (user.role === 'admin') return; // Don't show admin in the user list
+
             const userEl = document.createElement('div');
-            userEl.className = 'border p-4 rounded-lg';
+            userEl.className = 'border p-4 rounded-lg bg-white';
             
             let applicationsHtml = '<p class="text-gray-500">No applications yet.</p>';
             if (user.appliedInternships && user.appliedInternships.length > 0) {
@@ -208,12 +210,27 @@
                 }).join('');
             }
 
+            const detailsId = `details-${user.uid}`;
             userEl.innerHTML = `
-                <div>
-                    <h3 class="text-xl font-bold">${user.name || 'N/A'}</h3>
-                    <p class="text-gray-600">${user.email}</p>
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h3 class="text-xl font-bold">${user.fullName || user.name || 'N/A'}</h3>
+                        <p class="text-gray-600">${user.email}</p>
+                    </div>
+                    <button data-target="${detailsId}" class="toggle-details-btn bg-gray-200 text-gray-700 text-sm py-1 px-3 rounded-full hover:bg-gray-300">Show Details</button>
                 </div>
-                <div class="mt-4">
+                <div id="${detailsId}" class="hidden mt-4 pt-4 border-t">
+                    <h4 class="font-semibold mb-2">Personal Information:</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                        <p><strong>Contact:</strong> ${user.contactNumber || 'N/A'}</p>
+                        <p><strong>College:</strong> ${user.collegeName || 'N/A'}</p>
+                        <p><strong>Location:</strong> ${user.city || 'N/A'}, ${user.country || 'N/A'}</p>
+                        <p><strong>Gender:</strong> ${user.gender || 'N/A'}</p>
+                        <p><strong>DOB:</strong> ${user.dob || 'N/A'}</p>
+                        <p><strong>Father's Name:</strong> ${user.fatherName || 'N/A'}</p>
+                    </div>
+                </div>
+                <div class="mt-4 pt-4 border-t">
                     <h4 class="font-semibold">Applied Internships:</h4>
                     ${applicationsHtml}
                 </div>
@@ -262,9 +279,8 @@
             showMessage('Internship added successfully!');
             internshipForm.reset();
             loadInternships();
-            loadUsersAndApplications(); // Refresh users list after adding
+            loadUsersAndApplications();
         } catch (error) {
-            // UPDATED: Log the specific error to the console for debugging
             console.error("Error adding internship:", error);
             showMessage('Error adding internship. Check console for details.', true);
         }
@@ -278,7 +294,7 @@
                     await deleteDoc(doc(db, "internships", internshipId));
                     showMessage('Internship deleted.');
                     loadInternships();
-                    loadUsersAndApplications(); // Refresh users to remove deleted internship from their list
+                    loadUsersAndApplications();
                 } catch (error) {
                     console.error("Error deleting internship:", error);
                     showMessage('Error deleting internship.', true);
@@ -297,6 +313,15 @@
                  e.target.classList.remove('bg-green-500', 'hover:bg-green-600');
                  e.target.classList.add('bg-gray-400', 'cursor-not-allowed');
             });
+        }
+
+        if (e.target.classList.contains('toggle-details-btn')) {
+            const targetId = e.target.dataset.target;
+            const detailsEl = document.getElementById(targetId);
+            if (detailsEl) {
+                const isHidden = detailsEl.classList.toggle('hidden');
+                e.target.textContent = isHidden ? 'Show Details' : 'Hide Details';
+            }
         }
     });
 
