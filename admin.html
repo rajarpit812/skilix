@@ -230,12 +230,8 @@
         }
 
         usersToRender.forEach(user => {
-            // DEBUGGING: Log the user object to see what data is being received
-            console.log('Rendering user:', user.email, 'with applications:', user.appliedInternships);
-
             const userEl = document.createElement('div');
             userEl.className = 'border p-4 rounded-lg bg-white';
-            const applicationsId = `apps-${user.uid}`;
             const detailsId = `details-${user.uid}`;
 
             let applicationsHtml = '<p class="text-gray-500">No applications yet.</p>';
@@ -243,7 +239,6 @@
                 applicationsHtml = user.appliedInternships.map(internshipId => {
                     const internship = internshipsMap.get(internshipId);
                     if (!internship) return '';
-                    // RE-ADDED: "Issue Certificate" button
                     return `
                         <div class="mt-2 p-2 bg-indigo-50 rounded-md flex justify-between items-center">
                             <span>${internship.title}</span>
@@ -259,10 +254,7 @@
                         <h3 class="text-xl font-bold">${user.fullName || user.name || 'N/A'}</h3>
                         <p class="text-gray-600">${user.email}</p>
                     </div>
-                    <div class="flex gap-2">
-                         <button data-target="${applicationsId}" class="toggle-details-btn bg-gray-200 text-gray-700 text-sm py-1 px-3 rounded-full hover:bg-gray-300">View Applications</button>
-                         <button data-target="${detailsId}" class="toggle-details-btn bg-gray-200 text-gray-700 text-sm py-1 px-3 rounded-full hover:bg-gray-300">Show Details</button>
-                    </div>
+                    <button data-target="${detailsId}" class="toggle-details-btn bg-gray-200 text-gray-700 text-sm py-1 px-3 rounded-full hover:bg-gray-300">View Details & Applications</button>
                 </div>
                 
                 <div id="${detailsId}" class="hidden mt-4 pt-4 border-t">
@@ -275,6 +267,7 @@
                         <p><strong>DOB:</strong> ${user.dob || 'N/A'}</p>
                         <p><strong>Father's Name:</strong> ${user.fatherName || 'N/A'}</p>
                     </div>
+
                     <h4 class="font-semibold mt-4 mb-2">Upload Documents:</h4>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -289,10 +282,8 @@
                     <div class="text-right mt-2">
                         <button data-user-id="${user.uid}" class="save-links-btn bg-green-500 text-white text-sm py-1 px-3 rounded hover:bg-green-600">Save Links</button>
                     </div>
-                </div>
 
-                <div id="${applicationsId}" class="hidden mt-4 pt-4 border-t">
-                    <h4 class="font-semibold">Applied Internships:</h4>
+                    <h4 class="font-semibold mt-4">Applied Internships:</h4>
                     ${applicationsHtml}
                 </div>
             `;
@@ -311,7 +302,7 @@
 
             allUsersData = [];
             usersSnapshot.forEach(userDoc => {
-                const user = {...userDoc.data(), uid: userDoc.id}; // Ensure UID is part of the object
+                const user = {...userDoc.data(), uid: userDoc.id};
                 if (user.role !== 'admin') {
                     allUsersData.push(user);
                 }
@@ -395,7 +386,6 @@
             }
         }
         
-        // RE-ADDED: Event listener for issuing certificates
         if (target.classList.contains('issue-cert-btn')) {
             const { userId, internshipId, internshipTitle } = target.dataset;
             target.disabled = true;
