@@ -189,7 +189,6 @@
         }
     }
     
-    // FIXED: Full implementation of the function
     async function loadInternships() {
         internshipsList.innerHTML = '<p>Loading internships...</p>';
         try {
@@ -367,7 +366,7 @@
                 showMessage('Links saved successfully!');
             } catch (error) {
                 console.error("Error saving links:", error);
-                showMessage(`Failed to save links: ${error.code}`, true); // Show specific error code
+                showMessage(`Failed to save links: ${error.code}`, true);
             } finally {
                 target.disabled = false;
                 target.textContent = 'Save Links';
@@ -375,18 +374,80 @@
         }
     });
     
-    // --- Other listeners ---
+    // CORRECTED: Added full implementation for the remaining event listeners
     internshipForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        // ... (implementation is correct from previous version)
+        const submitBtn = document.getElementById('add-internship-btn');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Adding...';
+        try {
+            await addDoc(collection(db, "internships"), {
+                title: document.getElementById('title').value,
+                description: document.getElementById('description').value,
+                domain: document.getElementById('domain').value,
+                logoUrl: document.getElementById('logoUrl').value,
+                createdAt: new Date()
+            });
+            showMessage('Internship added successfully!');
+            internshipForm.reset();
+            loadInternships();
+        } catch (error) {
+            console.error("Error adding internship:", error);
+            showMessage('Error adding internship.', true);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Add Internship';
+        }
     });
 
     internshipsList.addEventListener('click', async (e) => {
-        // ... (implementation is correct from previous version)
+        const target = e.target;
+        const internshipId = target.dataset.id;
+
+        if (target.classList.contains('delete-btn')) {
+            if (confirm('Are you sure you want to delete this internship?')) {
+                try {
+                    await deleteDoc(doc(db, "internships", internshipId));
+                    showMessage('Internship deleted.');
+                    loadInternships();
+                } catch (error) {
+                    showMessage('Error deleting internship.', true);
+                }
+            }
+        }
+
+        if (target.classList.contains('modify-btn')) {
+            const docRef = doc(db, "internships", internshipId);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                document.getElementById('modify-internship-id').value = internshipId;
+                document.getElementById('modify-title').value = data.title;
+                document.getElementById('modify-description').value = data.description;
+                document.getElementById('modify-domain').value = data.domain;
+                document.getElementById('modify-logoUrl').value = data.logoUrl || '';
+                modifyModal.classList.remove('hidden');
+            }
+        }
     });
     
     modifyForm.addEventListener('submit', async (e) => {
-        // ... (implementation is correct from previous version)
+        e.preventDefault();
+        const internshipId = document.getElementById('modify-internship-id').value;
+        const docRef = doc(db, "internships", internshipId);
+        try {
+            await updateDoc(docRef, {
+                title: document.getElementById('modify-title').value,
+                description: document.getElementById('modify-description').value,
+                domain: document.getElementById('modify-domain').value,
+                logoUrl: document.getElementById('modify-logoUrl').value
+            });
+            showMessage('Internship updated successfully!');
+            modifyModal.classList.add('hidden');
+            loadInternships();
+        } catch (error) {
+            showMessage('Failed to update internship.', true);
+        }
     });
 
     closeModalBtn.addEventListener('click', () => modifyModal.classList.add('hidden'));
