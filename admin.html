@@ -55,6 +55,14 @@
                             <input type="text" id="title" class="w-full px-4 py-2 border rounded-lg" required>
                         </div>
                         <div class="mb-4">
+                            <label for="headline" class="block text-gray-700 font-medium mb-2">Headline</label>
+                            <input type="text" id="headline" class="w-full px-4 py-2 border rounded-lg" required>
+                        </div>
+                        <div class="mb-4">
+                            <label for="briefIntro" class="block text-gray-700 font-medium mb-2">Brief Intro</label>
+                            <textarea id="briefIntro" rows="2" class="w-full px-4 py-2 border rounded-lg" required></textarea>
+                        </div>
+                        <div class="mb-4">
                             <label for="description" class="block text-gray-700 font-medium mb-2">Description</label>
                             <textarea id="description" rows="4" class="w-full px-4 py-2 border rounded-lg" required></textarea>
                         </div>
@@ -99,6 +107,14 @@
                 <div class="mb-4">
                     <label for="modify-title" class="block text-gray-700 font-medium mb-2">Internship Title</label>
                     <input type="text" id="modify-title" class="w-full px-4 py-2 border rounded-lg" required>
+                </div>
+                <div class="mb-4">
+                    <label for="modify-headline" class="block text-gray-700 font-medium mb-2">Headline</label>
+                    <input type="text" id="modify-headline" class="w-full px-4 py-2 border rounded-lg" required>
+                </div>
+                <div class="mb-4">
+                    <label for="modify-briefIntro" class="block text-gray-700 font-medium mb-2">Brief Intro</label>
+                    <textarea id="modify-briefIntro" rows="2" class="w-full px-4 py-2 border rounded-lg" required></textarea>
                 </div>
                 <div class="mb-4">
                     <label for="modify-description" class="block text-gray-700 font-medium mb-2">Description</label>
@@ -233,16 +249,18 @@
             querySnapshot.forEach((doc) => {
                 const internship = doc.data();
                 const internshipEl = document.createElement('div');
-                internshipEl.className = 'border p-4 rounded-lg flex justify-between items-center bg-gray-50';
+                internshipEl.className = 'border p-4 rounded-lg flex flex-col md:flex-row justify-between items-start md:items-center bg-gray-50';
                 internshipEl.innerHTML = `
-                    <div class="flex items-center gap-4">
+                    <div class="flex items-start gap-4 flex-1">
                         <img src="${internship.logoUrl || 'https://placehold.co/60x60/e0e7ff/4f46e5?text=Logo'}" alt="logo" class="w-12 h-12 rounded-md object-cover">
-                        <div>
+                        <div class="flex-1">
                             <h3 class="text-xl font-bold">${internship.title}</h3>
                             <p class="text-gray-600">${internship.domain}</p>
+                            <p class="text-sm font-semibold mt-2">${internship.headline || 'No headline'}</p>
+                            <p class="text-sm text-gray-500">${internship.briefIntro || 'No intro'}</p>
                         </div>
                     </div>
-                    <div class="flex gap-2">
+                    <div class="flex gap-2 mt-4 md:mt-0">
                         <button data-id="${doc.id}" class="modify-btn bg-blue-500 text-white py-1 px-3 rounded hover:bg-blue-600">Modify</button>
                         <button data-id="${doc.id}" class="delete-btn bg-red-500 text-white py-1 px-3 rounded hover:bg-red-600">Delete</button>
                     </div>
@@ -446,6 +464,8 @@
         try {
             await addDoc(collection(db, "internships"), {
                 title: document.getElementById('title').value,
+                headline: document.getElementById('headline').value,
+                briefIntro: document.getElementById('briefIntro').value,
                 description: document.getElementById('description').value,
                 domain: document.getElementById('domain').value,
                 logoUrl: document.getElementById('logoUrl').value,
@@ -486,10 +506,12 @@
                 const data = docSnap.data();
                 document.getElementById('modify-internship-id').value = internshipId;
                 document.getElementById('modify-title').value = data.title;
+                document.getElementById('modify-headline').value = data.headline || '';
+                document.getElementById('modify-briefIntro').value = data.briefIntro || '';
                 document.getElementById('modify-description').value = data.description;
                 document.getElementById('modify-domain').value = data.domain;
                 document.getElementById('modify-logoUrl').value = data.logoUrl || '';
-                document.getElementById('modify-brochureUrl').value = data.brochureUrl || ''; // NEW
+                document.getElementById('modify-brochureUrl').value = data.brochureUrl || ''; 
                 
                 currentSubmissionFields = data.submissionFields || [];
                 renderSubmissionFields();
@@ -506,11 +528,13 @@
         try {
             await updateDoc(docRef, {
                 title: document.getElementById('modify-title').value,
+                headline: document.getElementById('modify-headline').value,
+                briefIntro: document.getElementById('modify-briefIntro').value,
                 description: document.getElementById('modify-description').value,
                 domain: document.getElementById('modify-domain').value,
                 logoUrl: document.getElementById('modify-logoUrl').value,
-                brochureUrl: document.getElementById('modify-brochureUrl').value, // NEW
-                submissionFields: currentSubmissionFields // NEW
+                brochureUrl: document.getElementById('modify-brochureUrl').value,
+                submissionFields: currentSubmissionFields
             });
             showMessage('Internship updated successfully!');
             modifyModal.classList.add('hidden');
