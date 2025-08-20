@@ -17,7 +17,6 @@
 </head>
 <body class="text-gray-800">
 
-    <!-- Header -->
     <header class="bg-white shadow-sm sticky top-0 z-50">
         <nav class="container mx-auto px-4 py-4 flex items-center justify-between">
             <a href="index.html" class="font-bold text-2xl tracking-tight">Skil<span class="text-indigo-600">ix</span></a>
@@ -30,19 +29,15 @@
         </nav>
     </header>
 
-    <!-- Main Content -->
     <main class="py-12">
         <div class="container mx-auto px-6">
-            <!-- Profile Details Section -->
             <div class="bg-white rounded-lg shadow-xl p-8 md:p-12 border border-gray-200 mb-12">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <!-- Left Column: Profile Picture & Basic Info -->
                     <div class="md:col-span-1 text-center">
                         <img id="user-avatar" src="https://placehold.co/150x150/e0e7ff/4f46e5?text=..." alt="User Avatar" class="h-36 w-36 rounded-full mx-auto object-cover border-4 border-indigo-200">
                         <h2 id="user-name-display" class="text-2xl font-bold text-gray-900 mt-4">Loading...</h2>
                         <p id="user-email-display" class="text-gray-600">Loading...</p>
                     </div>
-                    <!-- Right Column: Personal Information Form -->
                     <div class="md:col-span-2">
                         <h3 class="text-xl font-bold text-gray-800 mb-6 border-b pb-2">Personal Information</h3>
                         <form id="profile-form">
@@ -99,25 +94,21 @@
                 </div>
             </div>
 
-            <!-- Applied Internships Section -->
             <div class="bg-white rounded-lg shadow-xl p-8 md:p-12 border border-gray-200 mb-12">
                 <h2 class="text-2xl font-bold text-gray-900 mb-6">My Applications</h2>
                 <div id="applied-internships-list" class="space-y-4">
-                    <!-- Applied internships will be loaded here -->
                     <p>Loading your applications...</p>
                 </div>
             </div>
         </div>
     </main>
     
-    <!-- Notification Modal -->
     <div id="notification-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 opacity-0 pointer-events-none">
         <div class="bg-white rounded-lg shadow-xl p-6 max-w-sm text-center">
             <p id="notification-message" class="text-lg">Message here</p>
         </div>
     </div>
 
-    <!-- Footer -->
     <footer class="bg-gray-800 text-white py-8 mt-12">
         <div class="container mx-auto px-6 text-center">
             <p>&copy; 2025 Skilix. All Rights Reserved.</p>
@@ -239,13 +230,16 @@
                             const itemEl = document.createElement('div');
                             itemEl.className = 'p-4 border rounded-lg bg-gray-50';
 
-                            let buttonsHtml = '';
+                            // --- MODIFICATION START ---
+                            // Primary button to go to the course page
+                            let buttonsHtml = `<a href="course.html?id=${appDoc.id}" class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700">Go to Course Page</a>`;
+                            
+                            // Add offer letter button if available
                             if (application.offerLetterUrl) {
                                 buttonsHtml += `<a href="${application.offerLetterUrl}" target="_blank" class="bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-600">View Offer Letter</a>`;
                             }
-                            if (application.certificateUrl) {
-                                buttonsHtml += `<a href="${application.certificateUrl}" target="_blank" class="bg-green-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-600">View Certificate</a>`;
-                            }
+                            // Certificate button is removed as it's now on course.html
+                            // --- MODIFICATION END ---
                             
                             itemEl.innerHTML = `
                                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
@@ -254,8 +248,8 @@
                                         <p class="text-gray-600">${internship.domain}</p>
                                         <p class="text-sm text-gray-500 mt-1">Applied on: ${new Date(application.appliedAt.seconds * 1000).toLocaleDateString()}</p>
                                     </div>
-                                    <div class="flex gap-4 mt-4 md:mt-0">
-                                        ${buttonsHtml || '<p class="text-sm text-gray-500">Documents pending.</p>'}
+                                    <div class="flex flex-wrap gap-4 mt-4 md:mt-0">
+                                        ${buttonsHtml}
                                     </div>
                                 </div>
                             `;
