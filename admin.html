@@ -483,11 +483,16 @@
         }
     });
 
+    // We'll use event delegation for all clicks within the internship list
     internshipsList.addEventListener('click', async (e) => {
         const target = e.target;
-        const internshipId = target.dataset.id;
+        const button = target.closest('button');
+        if (!button) return;
 
-        if (target.classList.contains('delete-btn')) {
+        const internshipId = button.dataset.id;
+        if (!internshipId) return;
+
+        if (button.classList.contains('delete-btn')) {
             if (confirm('Are you sure you want to delete this internship?')) {
                 try {
                     await deleteDoc(doc(db, "internships", internshipId));
@@ -499,7 +504,7 @@
             }
         }
 
-        if (target.classList.contains('modify-btn')) {
+        if (button.classList.contains('modify-btn')) {
             const docRef = doc(db, "internships", internshipId);
             const docSnap = await getDoc(docRef);
             if (docSnap.exists()) {
@@ -546,24 +551,25 @@
 
     closeModalBtn.addEventListener('click', () => modifyModal.classList.add('hidden'));
     
-    // NEW: Add field form listener
-    addFieldForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const label = document.getElementById('field-label').value;
-        const type = document.getElementById('field-type').value;
-        
-        if (label.trim() === '') {
-            showMessage('Please enter a field label.', true);
-            return;
+    // NEW: Use event delegation for the add field form and remove buttons
+    modifyModal.addEventListener('submit', (e) => {
+        if (e.target.id === 'add-field-form') {
+            e.preventDefault();
+            const label = document.getElementById('field-label').value;
+            const type = document.getElementById('field-type').value;
+            
+            if (label.trim() === '') {
+                showMessage('Please enter a field label.', true);
+                return;
+            }
+            
+            currentSubmissionFields.push({ label, type });
+            renderSubmissionFields();
+            e.target.reset(); // Reset the form correctly
         }
-        
-        currentSubmissionFields.push({ label, type });
-        renderSubmissionFields();
-        addFieldForm.reset();
     });
 
-    // NEW: Remove field button listener
-    submissionFieldsList.addEventListener('click', (e) => {
+    modifyModal.addEventListener('click', (e) => {
         const target = e.target.closest('.remove-field-btn');
         if (target) {
             const indexToRemove = parseInt(target.dataset.index);
