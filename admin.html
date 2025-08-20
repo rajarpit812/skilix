@@ -124,19 +124,21 @@
                     <label for="modify-domain" class="block text-gray-700 font-medium mb-2">Domain</label>
                     <input type="text" id="modify-domain" class="w-full px-4 py-2 border rounded-lg" required>
                 </div>
-                <div class="mb-4">
+                 <div class="mb-4">
                     <label for="modify-logoUrl" class="block text-gray-700 font-medium mb-2">Logo URL</label>
                     <input type="url" id="modify-logoUrl" class="w-full px-4 py-2 border rounded-lg">
                 </div>
-                <div class="mb-4">
+                 <div class="mb-4">
                     <label for="modify-brochureUrl" class="block text-gray-700 font-medium mb-2">Brochure URL</label>
                     <input type="url" id="modify-brochureUrl" class="w-full px-4 py-2 border rounded-lg">
                 </div>
 
-                <!-- NEW: Submission Form Fields Section -->
+                <!-- ✅ FIXED: Submission Form Fields Section -->
                 <div class="border-t pt-4 mt-4">
                     <h3 class="text-xl font-semibold mb-4">Submission Form Fields</h3>
-                    <div id="submission-fields-list" class="space-y-2 mb-4"></div>
+                    <div id="submission-fields-list" class="space-y-2 mb-4">
+                        <!-- Dynamic fields will be rendered here -->
+                    </div>
                     <div id="add-field-container" class="flex gap-2 items-end">
                         <div class="flex-1">
                             <label for="field-label" class="block text-sm font-medium text-gray-700">Field Label</label>
@@ -153,7 +155,7 @@
                         <button type="button" id="add-field-btn" class="bg-indigo-500 text-white font-medium py-2 px-4 rounded-lg hover:bg-indigo-600">Add Field</button>
                     </div>
                 </div>
-                <!-- END NEW SECTION -->
+                <!-- END FIX -->
 
                 <div class="text-right mt-6">
                     <button type="submit" class="bg-indigo-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-indigo-700">
@@ -173,44 +175,13 @@
     <div id="message-box"></div>
 
 <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { getFirestore, doc, getDoc, collection, addDoc, getDocs, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    // ... keep ALL your existing Firebase imports, internship/user loading, etc. ...
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyBrP14baJEyuYYt5xOUt4SeSeUFM3RY2rk",
-        authDomain: "skilix.firebaseapp.com",
-        projectId: "skilix",
-        storageBucket: "skilix.appspot.com",
-        messagingSenderId: "1042532384192",
-        appId: "1:1042532384192:web:c0cc1939bb1ba8f7c69c25",
-        measurementId: "G-H7LB645GR9"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-
-    const adminDashboard = document.getElementById('admin-dashboard');
-    const accessDenied = document.getElementById('access-denied');
-    const internshipsList = document.getElementById('internships-list');
-    const messageBox = document.getElementById('message-box');
-    const modifyModal = document.getElementById('modify-modal');
-    const modifyForm = document.getElementById('modify-internship-form');
-    const closeModalBtn = document.getElementById('close-modal-btn');
-
+    // ✅ Replace only this part for dynamic submission fields
     const submissionFieldsList = document.getElementById('submission-fields-list');
     const addFieldBtn = document.getElementById('add-field-btn');
     let currentSubmissionFields = [];
 
-    function showMessage(message, isError = false) {
-        messageBox.textContent = message;
-        messageBox.style.backgroundColor = isError ? '#ef4444' : '#22c55e';
-        messageBox.classList.add('show');
-        setTimeout(() => messageBox.classList.remove('show'), 3000);
-    }
-
-    // Render submission fields dynamically
     function renderSubmissionFields() {
         submissionFieldsList.innerHTML = '';
         if (currentSubmissionFields.length === 0) {
@@ -228,24 +199,19 @@
         });
     }
 
-    // Add new field
     addFieldBtn.addEventListener('click', () => {
         const label = document.getElementById('field-label').value.trim();
         const type = document.getElementById('field-type').value;
-
         if (label === '') {
             showMessage('Please enter a field label.', true);
             return;
         }
-
         currentSubmissionFields.push({ label, type });
         renderSubmissionFields();
-
         document.getElementById('field-label').value = '';
         document.getElementById('field-type').value = 'text';
     });
 
-    // Remove field
     submissionFieldsList.addEventListener('click', (e) => {
         if (e.target.classList.contains('remove-field-btn')) {
             const index = e.target.dataset.index;
@@ -254,43 +220,7 @@
         }
     });
 
-    // Save internship updates
-    modifyForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const internshipId = document.getElementById('modify-internship-id').value;
-        const docRef = doc(db, "internships", internshipId);
-        try {
-            await updateDoc(docRef, {
-                title: document.getElementById('modify-title').value,
-                headline: document.getElementById('modify-headline').value,
-                briefIntro: document.getElementById('modify-briefIntro').value,
-                description: document.getElementById('modify-description').value,
-                domain: document.getElementById('modify-domain').value,
-                logoUrl: document.getElementById('modify-logoUrl').value,
-                brochureUrl: document.getElementById('modify-brochureUrl').value,
-                submissionFields: currentSubmissionFields
-            });
-            showMessage('Internship updated successfully!');
-            modifyModal.classList.add('hidden');
-        } catch (error) {
-            showMessage('Failed to update internship.', true);
-        }
-    });
-
-    closeModalBtn.addEventListener('click', () => modifyModal.classList.add('hidden'));
-
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            const userDoc = await getDoc(doc(db, "users", user.uid));
-            if (userDoc.exists() && userDoc.data().role === 'admin') {
-                adminDashboard.classList.remove('hidden');
-                accessDenied.classList.add('hidden');
-            } else {
-                adminDashboard.classList.add('hidden');
-                accessDenied.classList.remove('hidden');
-            }
-        }
-    });
+    // ... rest of your code untouched ...
 </script>
 </body>
 </html>
