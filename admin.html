@@ -112,7 +112,36 @@
                     <label for="modify-logoUrl" class="block text-gray-700 font-medium mb-2">Logo URL</label>
                     <input type="url" id="modify-logoUrl" class="w-full px-4 py-2 border rounded-lg">
                 </div>
-                <div class="text-right">
+                 <div class="mb-4">
+                    <label for="modify-brochureUrl" class="block text-gray-700 font-medium mb-2">Brochure URL</label>
+                    <input type="url" id="modify-brochureUrl" class="w-full px-4 py-2 border rounded-lg">
+                </div>
+
+                <!-- NEW: Submission Form Fields Section -->
+                <div class="border-t pt-4 mt-4">
+                    <h3 class="text-xl font-semibold mb-4">Submission Form Fields</h3>
+                    <div id="submission-fields-list" class="space-y-2 mb-4">
+                        <!-- Dynamic fields will be rendered here -->
+                    </div>
+                    <form id="add-field-form" class="flex gap-2 items-end">
+                        <div class="flex-1">
+                            <label for="field-label" class="block text-sm font-medium text-gray-700">Field Label</label>
+                            <input type="text" id="field-label" class="w-full px-3 py-2 border rounded-md" placeholder="e.g., GitHub Link">
+                        </div>
+                        <div class="flex-1">
+                            <label for="field-type" class="block text-sm font-medium text-gray-700">Field Type</label>
+                            <select id="field-type" class="w-full px-3 py-2 border rounded-md">
+                                <option value="text">Text</option>
+                                <option value="url">URL</option>
+                                <option value="file">File Upload</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="bg-indigo-500 text-white font-medium py-2 px-4 rounded-lg hover:bg-indigo-600">Add Field</button>
+                    </form>
+                </div>
+                <!-- END NEW SECTION -->
+
+                <div class="text-right mt-6">
                     <button type="submit" class="bg-indigo-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-indigo-700">
                         Save Changes
                     </button>
@@ -158,6 +187,11 @@
     const modifyForm = document.getElementById('modify-internship-form');
     const closeModalBtn = document.getElementById('close-modal-btn');
     const userSearchInput = document.getElementById('user-search');
+    
+    // NEW DOM elements
+    const submissionFieldsList = document.getElementById('submission-fields-list');
+    const addFieldForm = document.getElementById('add-field-form');
+    let currentSubmissionFields = [];
 
     let allUsersWithApps = []; 
 
@@ -220,6 +254,26 @@
             internshipsList.innerHTML = '<p class="text-red-500">Failed to load internships.</p>';
         }
     }
+    
+    // NEW function to render submission form fields
+    function renderSubmissionFields() {
+        submissionFieldsList.innerHTML = '';
+        if (currentSubmissionFields.length === 0) {
+            submissionFieldsList.innerHTML = '<p class="text-gray-500 text-sm italic">No custom fields added yet.</p>';
+            return;
+        }
+        currentSubmissionFields.forEach((field, index) => {
+            const fieldEl = document.createElement('div');
+            fieldEl.className = 'flex justify-between items-center p-2 bg-gray-100 rounded-md';
+            fieldEl.innerHTML = `
+                <p class="text-gray-800">${field.label} <span class="text-sm text-gray-500">(${field.type})</span></p>
+                <button type="button" class="remove-field-btn text-red-500 hover:text-red-700" data-index="${index}">
+                    <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd"></path></svg>
+                </button>
+            `;
+            submissionFieldsList.appendChild(fieldEl);
+        });
+    }
 
     function renderUsers(usersToRender, internshipsMap) {
         usersList.innerHTML = '';
@@ -239,9 +293,13 @@
                     const internship = internshipsMap.get(application.internshipId);
                     if (!internship) return '';
                     
+                    const paymentStatusText = application.paymentStatus || 'pending';
+                    const paymentStatusColor = application.paymentStatus === 'paid' ? 'text-green-600' : 'text-red-600';
+
                     return `
                         <div class="mt-4 pt-4 border-t">
                             <h5 class="font-semibold">${internship.title}</h5>
+                            <p class="text-sm">Payment Status: <span class="${paymentStatusColor} font-bold">${paymentStatusText}</span></p>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700">Offer Letter URL</label>
@@ -431,6 +489,11 @@
                 document.getElementById('modify-description').value = data.description;
                 document.getElementById('modify-domain').value = data.domain;
                 document.getElementById('modify-logoUrl').value = data.logoUrl || '';
+                document.getElementById('modify-brochureUrl').value = data.brochureUrl || ''; // NEW
+                
+                currentSubmissionFields = data.submissionFields || [];
+                renderSubmissionFields();
+                
                 modifyModal.classList.remove('hidden');
             }
         }
@@ -445,7 +508,9 @@
                 title: document.getElementById('modify-title').value,
                 description: document.getElementById('modify-description').value,
                 domain: document.getElementById('modify-domain').value,
-                logoUrl: document.getElementById('modify-logoUrl').value
+                logoUrl: document.getElementById('modify-logoUrl').value,
+                brochureUrl: document.getElementById('modify-brochureUrl').value, // NEW
+                submissionFields: currentSubmissionFields // NEW
             });
             showMessage('Internship updated successfully!');
             modifyModal.classList.add('hidden');
@@ -456,6 +521,32 @@
     });
 
     closeModalBtn.addEventListener('click', () => modifyModal.classList.add('hidden'));
+    
+    // NEW: Add field form listener
+    addFieldForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const label = document.getElementById('field-label').value;
+        const type = document.getElementById('field-type').value;
+        
+        if (label.trim() === '') {
+            showMessage('Please enter a field label.', true);
+            return;
+        }
+        
+        currentSubmissionFields.push({ label, type });
+        renderSubmissionFields();
+        addFieldForm.reset();
+    });
+
+    // NEW: Remove field button listener
+    submissionFieldsList.addEventListener('click', (e) => {
+        const target = e.target.closest('.remove-field-btn');
+        if (target) {
+            const indexToRemove = parseInt(target.dataset.index);
+            currentSubmissionFields.splice(indexToRemove, 1);
+            renderSubmissionFields();
+        }
+    });
 
 </script>
 </body>
