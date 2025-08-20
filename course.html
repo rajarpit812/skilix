@@ -9,9 +9,7 @@
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; }
-        .content-section {
-            display: none; /* Hidden by default, shown by JS */
-        }
+        .content-section { display: none; }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -37,28 +35,23 @@
             <p id="course-domain" class="text-indigo-600 font-semibold mt-2"></p>
             <p id="course-brief-intro" class="text-gray-700 mt-6 text-lg"></p>
             <p id="course-description" class="text-gray-600 mt-4"></p>
-            <div id="brochure-container" class="mt-6">
-                </div>
+            <div id="brochure-container" class="mt-6"></div>
         </section>
 
         <section id="tasks-section" class="content-section bg-white p-8 rounded-lg shadow-md mb-8">
             <h2 class="text-3xl font-bold text-gray-800 mb-6">Tasks & Submissions</h2>
-            <div id="tasks-list" class="space-y-6">
-                </div>
+            <div id="tasks-list" class="space-y-6"></div>
         </section>
 
         <section id="payment-section" class="content-section bg-white p-8 rounded-lg shadow-md mb-8 text-center">
             <h2 class="text-3xl font-bold text-gray-800 mb-4">Complete Your Enrollment</h2>
             <p class="text-gray-600 mb-6">Click the button below to complete the payment and unlock your certificate.</p>
-            <button id="pay-button" class="bg-green-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-green-700 transition duration-300">
-                Pay Now (₹500)
-            </button>
+            <button id="pay-button" class="bg-green-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-green-700">Pay Now (₹500)</button>
         </section>
         
         <section id="certificate-section" class="content-section bg-white p-8 rounded-lg shadow-md text-center">
             <h2 class="text-3xl font-bold text-gray-800 mb-4">Course Certificate</h2>
-            <div id="certificate-content">
-                </div>
+            <div id="certificate-content"></div>
         </section>
 
         <div id="error-state" class="hidden text-center py-16">
@@ -71,7 +64,7 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { getFirestore, doc, getDoc, collection, getDocs, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, collection, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyBrP14baJEyuYYt5xOUt4SeSeUFM3RY2rk",
@@ -88,22 +81,7 @@
     const db = getFirestore(app);
 
     // DOM Elements
-    const loadingState = document.getElementById('loading-state');
-    const errorState = document.getElementById('error-state');
-    const errorMessage = document.getElementById('error-message');
-    const contentSections = document.querySelectorAll('.content-section');
-
-    const courseTitle = document.getElementById('course-title');
-    const courseHeadline = document.getElementById('course-headline');
-    const courseDomain = document.getElementById('course-domain');
-    const courseBriefIntro = document.getElementById('course-brief-intro');
-    const courseDescription = document.getElementById('course-description');
-    const brochureContainer = document.getElementById('brochure-container');
-    const tasksList = document.getElementById('tasks-list');
-    const paymentSection = document.getElementById('payment-section');
-    const certificateSection = document.getElementById('certificate-section');
-    const certificateContent = document.getElementById('certificate-content');
-    const payButton = document.getElementById('pay-button');
+    const loadingState = document.getElementById('loading-state'), errorState = document.getElementById('error-state'), errorMessage = document.getElementById('error-message'), contentSections = document.querySelectorAll('.content-section'), courseTitle = document.getElementById('course-title'), courseHeadline = document.getElementById('course-headline'), courseDomain = document.getElementById('course-domain'), courseBriefIntro = document.getElementById('course-brief-intro'), courseDescription = document.getElementById('course-description'), brochureContainer = document.getElementById('brochure-container'), tasksList = document.getElementById('tasks-list'), paymentSection = document.getElementById('payment-section'), certificateSection = document.getElementById('certificate-section'), certificateContent = document.getElementById('certificate-content'), payButton = document.getElementById('pay-button');
 
     function showError(message) {
         loadingState.style.display = 'none';
@@ -116,29 +94,23 @@
         try {
             const appDocRef = doc(db, "applications", applicationId);
             const appDocSnap = await getDoc(appDocRef);
-            if (!appDocSnap.exists()) {
-                showError("Application not found.");
-                return;
-            }
+            if (!appDocSnap.exists()) { showError("Application not found."); return; }
             const appData = appDocSnap.data();
 
             const internshipDocRef = doc(db, "internships", appData.internshipId);
             const internshipDocSnap = await getDoc(internshipDocRef);
-            if (!internshipDocSnap.exists()) {
-                showError("Associated internship could not be found.");
-                return;
-            }
+            if (!internshipDocSnap.exists()) { showError("Associated internship could not be found."); return; }
             const internshipData = internshipDocSnap.data();
 
             const tasksColRef = collection(db, "internships", appData.internshipId, "tasks");
             const tasksSnapshot = await getDocs(tasksColRef);
 
             renderOverview(internshipData);
-            renderTasks(tasksSnapshot, appData, applicationId);
+            // MODIFIED: Pass internshipData to renderTasks to access submissionFields
+            renderTasks(tasksSnapshot, appData, applicationId, internshipData);
             renderPaymentAndCertificate(appData, applicationId);
             
             loadingState.style.display = 'none';
-            // Logic to show/hide sections is now handled inside render functions
         } catch (error) {
             console.error("Error loading course data:", error);
             showError("An unexpected error occurred.");
@@ -154,14 +126,12 @@
         courseDescription.textContent = internship.description;
 
         if (internship.brochureUrl) {
-            brochureContainer.innerHTML = `
-                <a href="${internship.brochureUrl}" target="_blank" class="inline-block bg-indigo-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-indigo-700 transition duration-300">
-                    Download Brochure
-                </a>`;
+            brochureContainer.innerHTML = `<a href="${internship.brochureUrl}" target="_blank" class="inline-block bg-indigo-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-indigo-700">Download Brochure</a>`;
         }
     }
 
-    function renderTasks(tasksSnapshot, appData, applicationId) {
+    // --- MODIFIED FUNCTION ---
+    function renderTasks(tasksSnapshot, appData, applicationId, internshipData) {
         document.getElementById('tasks-section').style.display = 'block';
         tasksList.innerHTML = '';
         if (tasksSnapshot.empty) {
@@ -169,51 +139,79 @@
             return;
         }
 
-        const userSubmissions = new Map((appData.submissions || []).map(s => [s.taskId, s.link]));
-
         tasksSnapshot.forEach(taskDoc => {
             const task = taskDoc.data();
             const taskId = taskDoc.id;
-            const existingSubmission = userSubmissions.get(taskId);
+            // NEW: Submissions are now a map/object, keyed by taskId
+            const existingSubmission = appData.submissions ? appData.submissions[taskId] : null;
 
             const taskEl = document.createElement('div');
             taskEl.className = 'border-t pt-6';
+
+            let formHtml = '';
+            if (existingSubmission) {
+                // Display submitted data if it exists
+                formHtml = '<h4 class="font-semibold text-green-700 mt-3">You have submitted for this task:</h4><ul class="list-disc list-inside mt-2 space-y-1">';
+                existingSubmission.forEach(field => {
+                    formHtml += `<li><strong>${field.label}:</strong> <a href="${field.value}" target="_blank" class="text-blue-600 underline break-all">${field.value}</a></li>`;
+                });
+                formHtml += '</ul>';
+            } else {
+                // Dynamically build the form from fields defined by admin
+                const submissionFields = internshipData.submissionFields || [];
+                if (submissionFields.length > 0) {
+                    formHtml += submissionFields.map(field => {
+                        const inputType = field.type === 'url' ? 'url' : 'text'; // Handle URL and text, default others to text
+                        const fieldId = `field-${taskId}-${field.label.replace(/\s+/g, '-')}`;
+                        return `
+                            <div class="mt-3">
+                                <label for="${fieldId}" class="block text-sm font-medium text-gray-700">${field.label}</label>
+                                <input type="${inputType}" id="${fieldId}" data-label="${field.label}" class="mt-1 w-full px-3 py-2 border rounded-md" placeholder="${field.label}" required>
+                            </div>`;
+                    }).join('');
+                    formHtml += `<button data-task-id="${taskId}" class="submit-task-btn mt-4 bg-blue-600 text-white font-semibold py-2 px-5 rounded-lg hover:bg-blue-700">Submit Task</button>`;
+                } else {
+                    formHtml = '<p class="text-sm text-gray-500 mt-2"><i>No submission fields have been set up for this internship.</i></p>';
+                }
+            }
+
             taskEl.innerHTML = `
                 <h3 class="text-xl font-semibold text-gray-900">${task.title}</h3>
                 <p class="text-gray-600 mt-2">${task.description}</p>
-                <div class="mt-4" id="form-container-${taskId}">
-                    ${existingSubmission ? `
-                        <p class="text-green-600 font-semibold">Submitted: <a href="${existingSubmission}" target="_blank" class="underline">${existingSubmission}</a></p>
-                    ` : `
-                        <div class="flex flex-col sm:flex-row gap-2">
-                            <input type="url" id="task-input-${taskId}" class="flex-grow px-4 py-2 border rounded-lg" placeholder="Paste your submission link here (e.g., GitHub, Google Drive)">
-                            <button data-task-id="${taskId}" class="submit-task-btn bg-blue-600 text-white font-semibold py-2 px-5 rounded-lg hover:bg-blue-700">Submit Task</button>
-                        </div>
-                    `}
-                </div>`;
+                <div class="mt-4" id="form-container-${taskId}">${formHtml}</div>`;
             tasksList.appendChild(taskEl);
         });
 
         document.querySelectorAll('.submit-task-btn').forEach(button => {
             button.addEventListener('click', async () => {
                 const taskId = button.dataset.taskId;
-                const input = document.getElementById(`task-input-${taskId}`);
-                const submissionLink = input.value.trim();
-
-                if (!submissionLink) {
-                    alert('Please provide a submission link.');
-                    return;
-                }
+                const formContainer = document.getElementById(`form-container-${taskId}`);
+                const inputs = formContainer.querySelectorAll('input');
                 
+                const submissionData = [];
+                let allFieldsValid = true;
+                inputs.forEach(input => {
+                    if (!input.value.trim()) allFieldsValid = false;
+                    submissionData.push({ label: input.dataset.label, value: input.value.trim() });
+                });
+
+                if (!allFieldsValid) { alert('Please fill out all submission fields.'); return; }
+
                 button.disabled = true;
                 button.textContent = 'Submitting...';
 
                 try {
-                    const submission = { taskId, link: submissionLink, submittedAt: new Date() };
                     const appDocRef = doc(db, "applications", applicationId);
-                    await updateDoc(appDocRef, { submissions: arrayUnion(submission) });
-                    document.getElementById(`form-container-${taskId}`).innerHTML = `
-                        <p class="text-green-600 font-semibold">Submitted: <a href="${submissionLink}" target="_blank" class="underline">${submissionLink}</a></p>`;
+                    // Use dot notation to update the map field in Firestore
+                    await updateDoc(appDocRef, { [`submissions.${taskId}`]: submissionData });
+
+                    let submittedHtml = '<h4 class="font-semibold text-green-700 mt-3">Submission successful!</h4><ul class="list-disc list-inside mt-2 space-y-1">';
+                    submissionData.forEach(field => {
+                        submittedHtml += `<li><strong>${field.label}:</strong> <a href="${field.value}" target="_blank" class="text-blue-600 underline break-all">${field.value}</a></li>`;
+                    });
+                    submittedHtml += '</ul>';
+                    formContainer.innerHTML = submittedHtml;
+
                 } catch (error) {
                     console.error("Error submitting task:", error);
                     alert('There was an error submitting your task.');
@@ -228,24 +226,18 @@
         if (appData.paymentStatus === 'paid') {
             paymentSection.style.display = 'none';
             certificateSection.style.display = 'block';
-
             if (appData.certificateUrl) {
-                certificateContent.innerHTML = `
-                    <p class="text-green-600 mb-6">Congratulations! Your certificate is ready.</p>
-                    <a href="${appData.certificateUrl}" target="_blank" class="inline-block bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-indigo-700">
-                        Download Certificate
-                    </a>`;
+                certificateContent.innerHTML = `<p class="text-green-600 mb-6">Congratulations! Your certificate is ready.</p><a href="${appData.certificateUrl}" target="_blank" class="inline-block bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-indigo-700">Download Certificate</a>`;
             } else {
                 certificateContent.innerHTML = `<p class="text-yellow-600">Your certificate is pending approval. Please check back later.</p>`;
             }
         } else {
             paymentSection.style.display = 'block';
             certificateSection.style.display = 'none';
-            
             payButton.addEventListener('click', () => {
                 const options = {
-                    "key": "YOUR_RAZORPAY_KEY", // Replace with your Key ID
-                    "amount": 50000, // Amount is in currency subunits. 50000 paise = ₹500.
+                    "key": "YOUR_RAZORPAY_KEY",
+                    "amount": 50000,
                     "currency": "INR",
                     "name": "Skilix",
                     "description": "Course Enrollment Fee",
@@ -253,10 +245,7 @@
                     "handler": async function (response) {
                         try {
                             const appDocRef = doc(db, "applications", applicationId);
-                            await updateDoc(appDocRef, {
-                                paymentStatus: "paid",
-                                paymentId: response.razorpay_payment_id
-                            });
+                            await updateDoc(appDocRef, { paymentStatus: "paid", paymentId: response.razorpay_payment_id });
                             alert("Payment successful!");
                             location.reload(); 
                         } catch (err) {
@@ -264,16 +253,11 @@
                             alert("Payment was successful, but we couldn't update your record. Please contact support.");
                         }
                     },
-                    "prefill": {
-                        "name": auth.currentUser.displayName || "",
-                        "email": auth.currentUser.email,
-                    },
+                    "prefill": { "name": auth.currentUser.displayName || "", "email": auth.currentUser.email },
                     "theme": { "color": "#4f46e5" }
                 };
                 const rzp1 = new Razorpay(options);
-                rzp1.on('payment.failed', function (response){
-                    alert("Payment failed: " + response.error.description);
-                });
+                rzp1.on('payment.failed', (response) => alert("Payment failed: " + response.error.description));
                 rzp1.open();
             });
         }
@@ -281,14 +265,9 @@
 
     onAuthStateChanged(auth, (user) => {
         if (user) {
-            const urlParams = new URLSearchParams(window.location.search);
-            const applicationId = urlParams.get('id');
-
-            if (applicationId) {
-                loadCoursePage(applicationId);
-            } else {
-                showError("No application ID found in the URL.");
-            }
+            const applicationId = new URLSearchParams(window.location.search).get('id');
+            if (applicationId) { loadCoursePage(applicationId); } 
+            else { showError("No application ID found in the URL."); }
         } else {
             window.location.href = 'auth.html';
         }
