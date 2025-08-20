@@ -33,8 +33,10 @@
 
         <section id="course-overview" class="content-section bg-white p-8 rounded-lg shadow-md mb-8">
             <h1 id="course-title" class="text-4xl font-bold text-gray-800"></h1>
-            <p id="course-domain" class="text-indigo-600 font-semibold mt-1"></p>
-            <p id="course-description" class="text-gray-700 mt-4"></p>
+            <p id="course-headline" class="text-2xl text-gray-700 mt-2"></p>
+            <p id="course-domain" class="text-indigo-600 font-semibold mt-2"></p>
+            <p id="course-brief-intro" class="text-gray-700 mt-6 text-lg"></p>
+            <p id="course-description" class="text-gray-600 mt-4"></p>
             <div id="brochure-container" class="mt-6">
                 </div>
         </section>
@@ -64,7 +66,6 @@
              <p id="error-message" class="text-xl mt-4 text-gray-700"></p>
              <a href="profile.html" class="mt-8 inline-block bg-indigo-600 text-white py-3 px-6 rounded-lg">Go to My Profile</a>
         </div>
-
     </main>
 
 <script type="module">
@@ -93,7 +94,9 @@
     const contentSections = document.querySelectorAll('.content-section');
 
     const courseTitle = document.getElementById('course-title');
+    const courseHeadline = document.getElementById('course-headline');
     const courseDomain = document.getElementById('course-domain');
+    const courseBriefIntro = document.getElementById('course-brief-intro');
     const courseDescription = document.getElementById('course-description');
     const brochureContainer = document.getElementById('brochure-container');
     const tasksList = document.getElementById('tasks-list');
@@ -101,7 +104,6 @@
     const certificateSection = document.getElementById('certificate-section');
     const certificateContent = document.getElementById('certificate-content');
     const payButton = document.getElementById('pay-button');
-
 
     function showError(message) {
         loadingState.style.display = 'none';
@@ -112,17 +114,14 @@
 
     async function loadCoursePage(applicationId) {
         try {
-            // 1. Fetch Application Data
             const appDocRef = doc(db, "applications", applicationId);
             const appDocSnap = await getDoc(appDocRef);
-
             if (!appDocSnap.exists()) {
-                showError("Application not found. Please check the link and try again.");
+                showError("Application not found.");
                 return;
             }
             const appData = appDocSnap.data();
 
-            // 2. Fetch Internship Data
             const internshipDocRef = doc(db, "internships", appData.internshipId);
             const internshipDocSnap = await getDoc(internshipDocRef);
             if (!internshipDocSnap.exists()) {
@@ -131,28 +130,27 @@
             }
             const internshipData = internshipDocSnap.data();
 
-            // 3. Fetch Tasks Subcollection
             const tasksColRef = collection(db, "internships", appData.internshipId, "tasks");
             const tasksSnapshot = await getDocs(tasksColRef);
 
-            // 4. Render all sections
             renderOverview(internshipData);
             renderTasks(tasksSnapshot, appData, applicationId);
             renderPaymentAndCertificate(appData, applicationId);
             
-            // Show content
             loadingState.style.display = 'none';
-            contentSections.forEach(s => s.style.display = 'block'); // Show all sections initially, then hide based on logic
-
+            // Logic to show/hide sections is now handled inside render functions
         } catch (error) {
             console.error("Error loading course data:", error);
-            showError("An unexpected error occurred. Please try again later.");
+            showError("An unexpected error occurred.");
         }
     }
 
     function renderOverview(internship) {
+        document.getElementById('course-overview').style.display = 'block';
         courseTitle.textContent = internship.title;
+        courseHeadline.textContent = internship.headline || '';
         courseDomain.textContent = internship.domain;
+        courseBriefIntro.textContent = internship.briefIntro || '';
         courseDescription.textContent = internship.description;
 
         if (internship.brochureUrl) {
@@ -164,6 +162,7 @@
     }
 
     function renderTasks(tasksSnapshot, appData, applicationId) {
+        document.getElementById('tasks-section').style.display = 'block';
         tasksList.innerHTML = '';
         if (tasksSnapshot.empty) {
             tasksList.innerHTML = '<p class="text-gray-500">No tasks have been assigned for this course yet.</p>';
@@ -212,17 +211,12 @@
                 try {
                     const submission = { taskId, link: submissionLink, submittedAt: new Date() };
                     const appDocRef = doc(db, "applications", applicationId);
-                    await updateDoc(appDocRef, {
-                        submissions: arrayUnion(submission)
-                    });
-
-                    // Update UI without reloading
+                    await updateDoc(appDocRef, { submissions: arrayUnion(submission) });
                     document.getElementById(`form-container-${taskId}`).innerHTML = `
                         <p class="text-green-600 font-semibold">Submitted: <a href="${submissionLink}" target="_blank" class="underline">${submissionLink}</a></p>`;
-
                 } catch (error) {
                     console.error("Error submitting task:", error);
-                    alert('There was an error submitting your task. Please try again.');
+                    alert('There was an error submitting your task.');
                     button.disabled = false;
                     button.textContent = 'Submit Task';
                 }
@@ -242,8 +236,7 @@
                         Download Certificate
                     </a>`;
             } else {
-                certificateContent.innerHTML = `
-                    <p class="text-yellow-600">Your certificate is pending approval from the admin. Please check back later.</p>`;
+                certificateContent.innerHTML = `<p class="text-yellow-600">Your certificate is pending approval. Please check back later.</p>`;
             }
         } else {
             paymentSection.style.display = 'block';
@@ -256,7 +249,7 @@
                     "currency": "INR",
                     "name": "Skilix",
                     "description": "Course Enrollment Fee",
-                    "image": "https://i.ibb.co/6wmw2S1/logo.png", // A link to your logo
+                    "image": "https://i.ibb.co/6wmw2S1/logo.png",
                     "handler": async function (response) {
                         try {
                             const appDocRef = doc(db, "applications", applicationId);
@@ -264,11 +257,10 @@
                                 paymentStatus: "paid",
                                 paymentId: response.razorpay_payment_id
                             });
-                            // Reload data on the page to reflect the new state
                             alert("Payment successful!");
-                            loadCoursePage(applicationId); 
+                            location.reload(); 
                         } catch (err) {
-                            console.error("Failed to update payment status in Firestore:", err);
+                            console.error("Failed to update payment status:", err);
                             alert("Payment was successful, but we couldn't update your record. Please contact support.");
                         }
                     },
@@ -276,21 +268,17 @@
                         "name": auth.currentUser.displayName || "",
                         "email": auth.currentUser.email,
                     },
-                    "theme": {
-                        "color": "#4f46e5" // Indigo color
-                    }
+                    "theme": { "color": "#4f46e5" }
                 };
                 const rzp1 = new Razorpay(options);
                 rzp1.on('payment.failed', function (response){
-                    alert("Payment failed. Please try again. Error: " + response.error.description);
+                    alert("Payment failed: " + response.error.description);
                 });
                 rzp1.open();
             });
         }
     }
 
-
-    // --- Main Execution ---
     onAuthStateChanged(auth, (user) => {
         if (user) {
             const urlParams = new URLSearchParams(window.location.search);
@@ -299,14 +287,12 @@
             if (applicationId) {
                 loadCoursePage(applicationId);
             } else {
-                showError("No application ID provided in the URL.");
+                showError("No application ID found in the URL.");
             }
         } else {
-            // If user is not logged in, redirect to login page.
             window.location.href = 'auth.html';
         }
     });
-
 </script>
 </body>
 </html>
