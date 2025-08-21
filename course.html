@@ -47,51 +47,47 @@
     </header>
 
     <main id="main-content" class="container mx-auto py-12 px-6 hidden">
-        <section class="bg-white rounded-lg shadow-lg p-8 border border-gray-200 mb-8">
-            <h1 id="internship-title" class="text-3xl md:text-4xl font-extrabold text-gray-900"></h1>
-            <p id="internship-domain" class="text-lg text-indigo-600 font-semibold mt-1"></p>
-            <p id="internship-headline" class="mt-4 text-gray-600"></p>
-            <a id="brochure-link" href="#" target="_blank" class="hidden mt-4 inline-block text-indigo-600 font-semibold hover:underline">
-                Download Brochure &rarr;
-            </a>
-        </section>
+        <div class="space-y-8">
+            <section class="bg-white rounded-lg shadow-lg p-8 border border-gray-200">
+                <h1 id="internship-title" class="text-3xl md:text-4xl font-extrabold text-gray-900"></h1>
+                <p id="internship-domain" class="text-lg text-indigo-600 font-semibold mt-1"></p>
+                <p id="internship-headline" class="mt-4 text-gray-600"></p>
+                <a id="brochure-link" href="#" target="_blank" class="hidden mt-4 inline-block text-indigo-600 font-semibold hover:underline">
+                    Download Brochure &rarr;
+                </a>
+            </section>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div class="lg:col-span-1 space-y-8">
-                <section class="bg-white rounded-lg shadow-lg p-6 border border-gray-200">
-                    <h2 class="text-xl font-bold text-gray-900 mb-4">Payment</h2>
-                    <div id="payment-details">
-                         <p class="text-lg font-semibold text-gray-800">Course Fee: ₹1999.00</p>
-                         <p id="payment-status-text" class="mt-2 text-sm font-medium"></p>
-                         <button id="pay-btn" class="w-full mt-4 bg-indigo-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:bg-indigo-700 transition-transform hover:scale-105">
-                            Pay Now
+            <section class="bg-white rounded-lg shadow-lg p-8 border border-gray-200">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6">Task Submission</h2>
+                <form id="submission-form">
+                    <div id="dynamic-form-fields" class="space-y-6">
+                        </div>
+                    <div class="mt-8 text-right">
+                         <button type="submit" id="save-submission-btn" class="bg-blue-600 text-white font-semibold py-3 px-8 rounded-lg shadow-md hover:bg-blue-700">
+                            Save Submission
                         </button>
                     </div>
-                </section>
+                </form>
+            </section>
+            
+            <section class="bg-white rounded-lg shadow-lg p-8 border border-gray-200">
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">Payment</h2>
+                <div id="payment-details">
+                     <p class="text-lg font-semibold text-gray-800">Course Fee: ₹1999.00</p>
+                     <p id="payment-status-text" class="mt-2 text-sm font-medium"></p>
+                     <button id="pay-btn" class="w-full max-w-xs mt-4 bg-indigo-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:bg-indigo-700 transition-transform hover:scale-105">
+                        Pay Now
+                    </button>
+                </div>
+            </section>
 
-                <section id="certificate-section" class="hidden bg-white rounded-lg shadow-lg p-6 border border-gray-200">
-                    <h2 class="text-xl font-bold text-gray-900 mb-4">Completion</h2>
-                    <p class="text-gray-600 mb-4">Congratulations! You can now download your certificate.</p>
-                    <a id="certificate-link" href="#" target="_blank" class="w-full text-center block bg-green-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-green-700">
-                        Download Certificate
-                    </a>
-                </section>
-            </div>
-
-            <div class="lg:col-span-2">
-                <section class="bg-white rounded-lg shadow-lg p-8 border border-gray-200">
-                    <h2 class="text-xl font-bold text-gray-900 mb-6">Task Submission</h2>
-                    <form id="submission-form">
-                        <div id="dynamic-form-fields" class="space-y-6">
-                            </div>
-                        <div class="mt-8 text-right">
-                             <button type="submit" id="save-submission-btn" class="bg-blue-600 text-white font-semibold py-3 px-8 rounded-lg shadow-md hover:bg-blue-700">
-                                Save Submission
-                            </button>
-                        </div>
-                    </form>
-                </section>
-            </div>
+            <section id="certificate-section" class="hidden bg-white rounded-lg shadow-lg p-8 border border-gray-200">
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">Completion Certificate</h2>
+                <p class="text-gray-600 mb-4">Congratulations! You can now download your certificate.</p>
+                <a id="certificate-link" href="#" target="_blank" class="w-full max-w-xs text-center block bg-green-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-green-700">
+                    Download Certificate
+                </a>
+            </section>
         </div>
     </main>
 
