@@ -3,275 +3,361 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Course - Skilix</title>
+    <title>Skilix - My Course</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .content-section { display: none; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+        }
+        .container { max-width: 900px; }
+        #message-box {
+            position: fixed; bottom: 20px; left: 50%;
+            transform: translateX(-50%); padding: 12px 24px;
+            border-radius: 8px; color: white; z-index: 100;
+            opacity: 0; visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        #message-box.show { opacity: 1; visibility: visible; }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4f46e5;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="bg-gray-100">
+<body class="text-gray-800">
 
-    <header class="bg-white shadow-sm">
-        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <a href="index.html" class="font-bold text-2xl">Skil<span class="text-indigo-600">ix</span></a>
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <nav class="container mx-auto px-4 py-4 flex items-center justify-between">
+            <a href="index.html" class="font-bold text-2xl tracking-tight">Skil<span class="text-indigo-600">ix</span></a>
             <div>
-                <a href="profile.html" class="text-gray-600 hover:text-indigo-600 mr-4">My Profile</a>
-                <a href="index.html" class="text-gray-600 hover:text-indigo-600">Homepage</a>
+                <a href="profile.html" class="text-gray-600 hover:text-indigo-600 mr-6">My Profile</a>
+                <button id="logout-btn" class="bg-red-500 text-white font-semibold py-2 px-6 rounded-full hover:bg-red-600">
+                    Logout
+                </button>
             </div>
         </nav>
     </header>
 
-    <main id="main-content" class="container mx-auto px-6 py-8">
-        <div id="loading-state" class="text-center py-16">
-            <p class="text-lg text-gray-600">Loading your course details...</p>
-        </div>
-
-        <section id="course-overview" class="content-section bg-white p-8 rounded-lg shadow-md mb-8">
-            <h1 id="course-title" class="text-4xl font-bold text-gray-800"></h1>
-            <p id="course-headline" class="text-2xl text-gray-700 mt-2"></p>
-            <p id="course-domain" class="text-indigo-600 font-semibold mt-2"></p>
-            <p id="course-brief-intro" class="text-gray-700 mt-6 text-lg"></p>
-            <p id="course-description" class="text-gray-600 mt-4"></p>
-            <div id="brochure-container" class="mt-6"></div>
+    <main id="main-content" class="container mx-auto py-12 px-6 hidden">
+        <section class="bg-white rounded-lg shadow-lg p-8 border border-gray-200 mb-8">
+            <h1 id="internship-title" class="text-3xl md:text-4xl font-extrabold text-gray-900"></h1>
+            <p id="internship-domain" class="text-lg text-indigo-600 font-semibold mt-1"></p>
+            <p id="internship-headline" class="mt-4 text-gray-600"></p>
+            <a id="brochure-link" href="#" target="_blank" class="hidden mt-4 inline-block text-indigo-600 font-semibold hover:underline">
+                Download Brochure &rarr;
+            </a>
         </section>
 
-        <section id="tasks-section" class="content-section bg-white p-8 rounded-lg shadow-md mb-8">
-            <h2 class="text-3xl font-bold text-gray-800 mb-6">Tasks & Submissions</h2>
-            <div id="tasks-list" class="space-y-6"></div>
-        </section>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-1 space-y-8">
+                <section class="bg-white rounded-lg shadow-lg p-6 border border-gray-200">
+                    <h2 class="text-xl font-bold text-gray-900 mb-4">Payment</h2>
+                    <div id="payment-details">
+                         <p class="text-lg font-semibold text-gray-800">Course Fee: ₹1999.00</p>
+                         <p id="payment-status-text" class="mt-2 text-sm font-medium"></p>
+                         <button id="pay-btn" class="w-full mt-4 bg-indigo-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:bg-indigo-700 transition-transform hover:scale-105">
+                            Pay Now
+                        </button>
+                    </div>
+                </section>
 
-        <section id="payment-section" class="content-section bg-white p-8 rounded-lg shadow-md mb-8 text-center">
-            <h2 class="text-3xl font-bold text-gray-800 mb-4">Complete Your Enrollment</h2>
-            <p class="text-gray-600 mb-6">Click the button below to complete the payment and unlock your certificate.</p>
-            <button id="pay-button" class="bg-green-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-green-700">Pay Now (₹500)</button>
-        </section>
-        
-        <section id="certificate-section" class="content-section bg-white p-8 rounded-lg shadow-md text-center">
-            <h2 class="text-3xl font-bold text-gray-800 mb-4">Course Certificate</h2>
-            <div id="certificate-content"></div>
-        </section>
+                <section id="certificate-section" class="hidden bg-white rounded-lg shadow-lg p-6 border border-gray-200">
+                    <h2 class="text-xl font-bold text-gray-900 mb-4">Completion</h2>
+                    <p class="text-gray-600 mb-4">Congratulations! You can now download your certificate.</p>
+                    <a id="certificate-link" href="#" target="_blank" class="w-full text-center block bg-green-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-green-700">
+                        Download Certificate
+                    </a>
+                </section>
+            </div>
 
-        <div id="error-state" class="hidden text-center py-16">
-             <h1 class="text-4xl font-bold text-red-600">Error</h1>
-             <p id="error-message" class="text-xl mt-4 text-gray-700"></p>
-             <a href="profile.html" class="mt-8 inline-block bg-indigo-600 text-white py-3 px-6 rounded-lg">Go to My Profile</a>
+            <div class="lg:col-span-2">
+                <section class="bg-white rounded-lg shadow-lg p-8 border border-gray-200">
+                    <h2 class="text-xl font-bold text-gray-900 mb-6">Task Submission</h2>
+                    <form id="submission-form">
+                        <div id="dynamic-form-fields" class="space-y-6">
+                            </div>
+                        <div class="mt-8 text-right">
+                             <button type="submit" id="save-submission-btn" class="bg-blue-600 text-white font-semibold py-3 px-8 rounded-lg shadow-md hover:bg-blue-700">
+                                Save Submission
+                            </button>
+                        </div>
+                    </form>
+                </section>
+            </div>
         </div>
     </main>
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { getFirestore, doc, getDoc, collection, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    <div id="loading-state" class="text-center py-24">
+        <div class="loader mx-auto"></div>
+        <p class="mt-4 text-gray-600">Loading your course details...</p>
+    </div>
+    <div id="access-denied" class="hidden text-center py-24">
+        <h1 class="text-4xl font-bold text-red-600">Access Denied</h1>
+        <p class="text-xl mt-4">You do not have permission to view this page or the application is invalid.</p>
+        <a href="profile.html" class="mt-8 inline-block bg-indigo-600 text-white py-3 px-6 rounded-lg">Go to My Profile</a>
+    </div>
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyBrP14baJEyuYYt5xOUt4SeSeUFM3RY2rk",
-        authDomain: "skilix.firebaseapp.com",
-        projectId: "skilix",
-        storageBucket: "skilix.appspot.com",
-        messagingSenderId: "1042532384192",
-        appId: "1:1042532384192:web:c0cc1939bb1ba8f7c69c25",
-        measurementId: "G-H7LB645GR9"
-    };
+    <div id="message-box"></div>
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    // DOM Elements
-    const loadingState = document.getElementById('loading-state'), errorState = document.getElementById('error-state'), errorMessage = document.getElementById('error-message'), contentSections = document.querySelectorAll('.content-section'), courseTitle = document.getElementById('course-title'), courseHeadline = document.getElementById('course-headline'), courseDomain = document.getElementById('course-domain'), courseBriefIntro = document.getElementById('course-brief-intro'), courseDescription = document.getElementById('course-description'), brochureContainer = document.getElementById('brochure-container'), tasksList = document.getElementById('tasks-list'), paymentSection = document.getElementById('payment-section'), certificateSection = document.getElementById('certificate-section'), certificateContent = document.getElementById('certificate-content'), payButton = document.getElementById('pay-button');
+        const firebaseConfig = {
+            apiKey: "AIzaSyBrP14baJEyuYYt5xOUt4SeSeUFM3RY2rk",
+            authDomain: "skilix.firebaseapp.com",
+            projectId: "skilix",
+            storageBucket: "skilix.appspot.com",
+            messagingSenderId: "1042532384192",
+            appId: "1:1042532384192:web:c0cc1939bb1ba8f7c69c25",
+            measurementId: "G-H7LB645GR9"
+        };
 
-    function showError(message) {
-        loadingState.style.display = 'none';
-        contentSections.forEach(s => s.style.display = 'none');
-        errorMessage.textContent = message;
-        errorState.classList.remove('hidden');
-    }
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
 
-    async function loadCoursePage(applicationId) {
-        try {
-            const appDocRef = doc(db, "applications", applicationId);
-            const appDocSnap = await getDoc(appDocRef);
-            if (!appDocSnap.exists()) { showError("Application not found."); return; }
-            const appData = appDocSnap.data();
+        // --- DOM ELEMENTS ---
+        const mainContent = document.getElementById('main-content');
+        const loadingState = document.getElementById('loading-state');
+        const accessDenied = document.getElementById('access-denied');
+        const messageBox = document.getElementById('message-box');
 
-            const internshipDocRef = doc(db, "internships", appData.internshipId);
-            const internshipDocSnap = await getDoc(internshipDocRef);
-            if (!internshipDocSnap.exists()) { showError("Associated internship could not be found."); return; }
-            const internshipData = internshipDocSnap.data();
+        // --- UTILITY FUNCTIONS ---
+        const showMessage = (message, isError = false) => {
+            messageBox.textContent = message;
+            messageBox.style.backgroundColor = isError ? '#ef4444' : '#22c55e';
+            messageBox.classList.add('show');
+            setTimeout(() => messageBox.classList.remove('show'), 3000);
+        };
 
-            const tasksColRef = collection(db, "internships", appData.internshipId, "tasks");
-            const tasksSnapshot = await getDocs(tasksColRef);
-
-            renderOverview(internshipData);
-            // MODIFIED: Pass internshipData to renderTasks to access submissionFields
-            renderTasks(tasksSnapshot, appData, applicationId, internshipData);
-            renderPaymentAndCertificate(appData, applicationId);
-            
-            loadingState.style.display = 'none';
-        } catch (error) {
-            console.error("Error loading course data:", error);
-            showError("An unexpected error occurred.");
-        }
-    }
-
-    function renderOverview(internship) {
-        document.getElementById('course-overview').style.display = 'block';
-        courseTitle.textContent = internship.title;
-        courseHeadline.textContent = internship.headline || '';
-        courseDomain.textContent = internship.domain;
-        courseBriefIntro.textContent = internship.briefIntro || '';
-        courseDescription.textContent = internship.description;
-
-        if (internship.brochureUrl) {
-            brochureContainer.innerHTML = `<a href="${internship.brochureUrl}" target="_blank" class="inline-block bg-indigo-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-indigo-700">Download Brochure</a>`;
-        }
-    }
-
-    // --- MODIFIED FUNCTION ---
-    function renderTasks(tasksSnapshot, appData, applicationId, internshipData) {
-        document.getElementById('tasks-section').style.display = 'block';
-        tasksList.innerHTML = '';
-        if (tasksSnapshot.empty) {
-            tasksList.innerHTML = '<p class="text-gray-500">No tasks have been assigned for this course yet.</p>';
-            return;
-        }
-
-        tasksSnapshot.forEach(taskDoc => {
-            const task = taskDoc.data();
-            const taskId = taskDoc.id;
-            // NEW: Submissions are now a map/object, keyed by taskId
-            const existingSubmission = appData.submissions ? appData.submissions[taskId] : null;
-
-            const taskEl = document.createElement('div');
-            taskEl.className = 'border-t pt-6';
-
-            let formHtml = '';
-            if (existingSubmission) {
-                // Display submitted data if it exists
-                formHtml = '<h4 class="font-semibold text-green-700 mt-3">You have submitted for this task:</h4><ul class="list-disc list-inside mt-2 space-y-1">';
-                existingSubmission.forEach(field => {
-                    formHtml += `<li><strong>${field.label}:</strong> <a href="${field.value}" target="_blank" class="text-blue-600 underline break-all">${field.value}</a></li>`;
-                });
-                formHtml += '</ul>';
-            } else {
-                // Dynamically build the form from fields defined by admin
-                const submissionFields = internshipData.submissionFields || [];
-                if (submissionFields.length > 0) {
-                    formHtml += submissionFields.map(field => {
-                        const inputType = field.type === 'url' ? 'url' : 'text'; // Handle URL and text, default others to text
-                        const fieldId = `field-${taskId}-${field.label.replace(/\s+/g, '-')}`;
-                        return `
-                            <div class="mt-3">
-                                <label for="${fieldId}" class="block text-sm font-medium text-gray-700">${field.label}</label>
-                                <input type="${inputType}" id="${fieldId}" data-label="${field.label}" class="mt-1 w-full px-3 py-2 border rounded-md" placeholder="${field.label}" required>
-                            </div>`;
-                    }).join('');
-                    formHtml += `<button data-task-id="${taskId}" class="submit-task-btn mt-4 bg-blue-600 text-white font-semibold py-2 px-5 rounded-lg hover:bg-blue-700">Submit Task</button>`;
-                } else {
-                    formHtml = '<p class="text-sm text-gray-500 mt-2"><i>No submission fields have been set up for this internship.</i></p>';
-                }
+        // --- PAGE INITIALIZATION ---
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                window.location.href = 'index.html';
+                return;
             }
 
-            taskEl.innerHTML = `
-                <h3 class="text-xl font-semibold text-gray-900">${task.title}</h3>
-                <p class="text-gray-600 mt-2">${task.description}</p>
-                <div class="mt-4" id="form-container-${taskId}">${formHtml}</div>`;
-            tasksList.appendChild(taskEl);
-        });
+            const params = new URLSearchParams(window.location.search);
+            const applicationId = params.get("id");
 
-        document.querySelectorAll('.submit-task-btn').forEach(button => {
-            button.addEventListener('click', async () => {
-                const taskId = button.dataset.taskId;
-                const formContainer = document.getElementById(`form-container-${taskId}`);
-                const inputs = formContainer.querySelectorAll('input');
+            if (!applicationId) {
+                loadingState.classList.add('hidden');
+                accessDenied.classList.remove('hidden');
+                return;
+            }
+
+            try {
+                // --- SECURITY CHECK ---
+                const appRef = doc(db, "applications", applicationId);
+                const appSnap = await getDoc(appRef);
+
+                if (!appSnap.exists() || appSnap.data().userId !== user.uid) {
+                    loadingState.classList.add('hidden');
+                    accessDenied.classList.remove('hidden');
+                    return;
+                }
+
+                const application = appSnap.data();
                 
-                const submissionData = [];
-                let allFieldsValid = true;
-                inputs.forEach(input => {
-                    if (!input.value.trim()) allFieldsValid = false;
-                    submissionData.push({ label: input.dataset.label, value: input.value.trim() });
-                });
-
-                if (!allFieldsValid) { alert('Please fill out all submission fields.'); return; }
-
-                button.disabled = true;
-                button.textContent = 'Submitting...';
-
-                try {
-                    const appDocRef = doc(db, "applications", applicationId);
-                    // Use dot notation to update the map field in Firestore
-                    await updateDoc(appDocRef, { [`submissions.${taskId}`]: submissionData });
-
-                    let submittedHtml = '<h4 class="font-semibold text-green-700 mt-3">Submission successful!</h4><ul class="list-disc list-inside mt-2 space-y-1">';
-                    submissionData.forEach(field => {
-                        submittedHtml += `<li><strong>${field.label}:</strong> <a href="${field.value}" target="_blank" class="text-blue-600 underline break-all">${field.value}</a></li>`;
-                    });
-                    submittedHtml += '</ul>';
-                    formContainer.innerHTML = submittedHtml;
-
-                } catch (error) {
-                    console.error("Error submitting task:", error);
-                    alert('There was an error submitting your task.');
-                    button.disabled = false;
-                    button.textContent = 'Submit Task';
+                // --- DATA FETCHING ---
+                const internshipRef = doc(db, "internships", application.internshipId);
+                const userProfileRef = doc(db, "users", user.uid);
+                const [internshipSnap, userProfileSnap] = await Promise.all([getDoc(internshipRef), getDoc(userProfileRef)]);
+                
+                if (!internshipSnap.exists()) {
+                    throw new Error("Internship data not found.");
                 }
-            });
-        });
-    }
 
-    function renderPaymentAndCertificate(appData, applicationId) {
-        if (appData.paymentStatus === 'paid') {
-            paymentSection.style.display = 'none';
-            certificateSection.style.display = 'block';
-            if (appData.certificateUrl) {
-                certificateContent.innerHTML = `<p class="text-green-600 mb-6">Congratulations! Your certificate is ready.</p><a href="${appData.certificateUrl}" target="_blank" class="inline-block bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-indigo-700">Download Certificate</a>`;
-            } else {
-                certificateContent.innerHTML = `<p class="text-yellow-600">Your certificate is pending approval. Please check back later.</p>`;
+                const internship = internshipSnap.data();
+                const userProfile = userProfileSnap.data() || {};
+                
+                // --- RENDER PAGE CONTENT ---
+                renderPage(application, internship, user, userProfile);
+                
+                loadingState.classList.add('hidden');
+                mainContent.classList.remove('hidden');
+
+            } catch (error) {
+                console.error("Error loading page:", error);
+                loadingState.innerHTML = `<p class="text-red-500 font-bold">Error: ${error.message}</p>`;
             }
-        } else {
-            paymentSection.style.display = 'block';
-            certificateSection.style.display = 'none';
-            payButton.addEventListener('click', () => {
-                const options = {
-                    "key": "YOUR_RAZORPAY_KEY",
-                    "amount": 50000,
-                    "currency": "INR",
-                    "name": "Skilix",
-                    "description": "Course Enrollment Fee",
-                    "image": "https://i.ibb.co/6wmw2S1/logo.png",
-                    "handler": async function (response) {
-                        try {
-                            const appDocRef = doc(db, "applications", applicationId);
-                            await updateDoc(appDocRef, { paymentStatus: "paid", paymentId: response.razorpay_payment_id });
-                            alert("Payment successful!");
-                            location.reload(); 
-                        } catch (err) {
-                            console.error("Failed to update payment status:", err);
-                            alert("Payment was successful, but we couldn't update your record. Please contact support.");
-                        }
-                    },
-                    "prefill": { "name": auth.currentUser.displayName || "", "email": auth.currentUser.email },
-                    "theme": { "color": "#4f46e5" }
-                };
-                const rzp1 = new Razorpay(options);
-                rzp1.on('payment.failed', (response) => alert("Payment failed: " + response.error.description));
-                rzp1.open();
+        });
+
+        // --- MAIN RENDER FUNCTION ---
+        function renderPage(application, internship, user, userProfile) {
+            // Populate Header
+            document.getElementById("internship-title").textContent = internship.title;
+            document.getElementById("internship-domain").textContent = internship.domain;
+            document.getElementById("internship-headline").textContent = internship.headline;
+            if (internship.brochureUrl) {
+                const brochureLink = document.getElementById("brochure-link");
+                brochureLink.href = internship.brochureUrl;
+                brochureLink.classList.remove('hidden');
+            }
+
+            // Render Payment Section
+            updatePaymentSection(application.paymentStatus);
+
+            // Render Certificate Section
+            if (application.certificateUrl) {
+                document.getElementById('certificate-section').classList.remove('hidden');
+                document.getElementById('certificate-link').href = application.certificateUrl;
+            }
+
+            // Render Dynamic Submission Form
+            renderSubmissionForm(internship.submissionFields || [], application.submissions || {});
+
+            // --- EVENT LISTENERS ---
+            document.getElementById('pay-btn').addEventListener('click', () => {
+                handlePayment(application, internship, user, userProfile);
+            });
+
+            document.getElementById('submission-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                handleSubmission(application.internshipId, user.uid);
             });
         }
-    }
+        
+        function updatePaymentSection(status) {
+            const payBtn = document.getElementById('pay-btn');
+            const statusText = document.getElementById('payment-status-text');
 
-    onAuthStateChanged(auth, (user) => {
-        if (user) {
-            const applicationId = new URLSearchParams(window.location.search).get('id');
-            if (applicationId) { loadCoursePage(applicationId); } 
-            else { showError("No application ID found in the URL."); }
-        } else {
-            window.location.href = 'auth.html';
+            if (status === 'paid') {
+                statusText.textContent = 'Payment Successful ✅';
+                statusText.className = 'mt-2 text-sm font-medium text-green-600';
+                payBtn.textContent = 'Paid';
+                payBtn.disabled = true;
+                payBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700', 'hover:scale-105');
+                payBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
+            } else {
+                statusText.textContent = 'Your payment is pending.';
+                statusText.className = 'mt-2 text-sm font-medium text-amber-600';
+            }
         }
-    });
-</script>
+        
+        function renderSubmissionForm(fields, existingSubmissions) {
+            const container = document.getElementById('dynamic-form-fields');
+            container.innerHTML = ''; // Clear previous fields
+            
+            if (!fields || fields.length === 0) {
+                container.innerHTML = '<p class="text-gray-500">No submission tasks required for this internship.</p>';
+                 document.getElementById('save-submission-btn').classList.add('hidden');
+                return;
+            }
+            
+            fields.forEach(field => {
+                const fieldId = `field-${field.label.replace(/\s+/g, '-')}`;
+                const value = existingSubmissions[field.label] || '';
+                
+                const fieldWrapper = document.createElement('div');
+                let inputHtml = '';
+
+                // Note: File uploads require Firebase Storage and more complex backend logic.
+                // This example handles the UI for it, but not the upload process.
+                if (field.type === 'file') {
+                    inputHtml = `<input type="file" id="${fieldId}" name="${field.label}" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">`;
+                } else {
+                    inputHtml = `<input type="${field.type === 'url' ? 'url' : 'text'}" id="${fieldId}" name="${field.label}" value="${value}" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Enter ${field.label}" required>`;
+                }
+
+                fieldWrapper.innerHTML = `
+                    <label for="${fieldId}" class="block text-gray-700 font-medium mb-2">${field.label}</label>
+                    ${inputHtml}
+                `;
+                container.appendChild(fieldWrapper);
+            });
+        }
+        
+        async function handleSubmission() {
+            const form = document.getElementById('submission-form');
+            const submitBtn = document.getElementById('save-submission-btn');
+            const formData = new FormData(form);
+            const submissionData = {};
+
+            for (const [key, value] of formData.entries()) {
+                // For file inputs, we'd handle the file object. Here we just store the name.
+                if (value instanceof File) {
+                    submissionData[key] = value.name; // Placeholder for file upload logic
+                } else {
+                    submissionData[key] = value;
+                }
+            }
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Saving...';
+
+            try {
+                const applicationId = new URLSearchParams(window.location.search).get("id");
+                const appRef = doc(db, "applications", applicationId);
+                await updateDoc(appRef, {
+                    submissions: submissionData
+                });
+                showMessage('Your submission has been saved successfully!');
+            } catch (error) {
+                console.error("Error saving submission:", error);
+                showMessage('There was an error saving your submission.', true);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Save Submission';
+            }
+        }
+        
+        function handlePayment(application, internship, user, userProfile) {
+            const options = {
+                key: "YOUR_RAZORPAY_KEY_ID", // Replace with your live Key ID
+                amount: 199900, // Amount is in currency subunits. e.g., 50000 for ₹500.00
+                currency: "INR",
+                name: "Skilix",
+                description: `Payment for ${internship.title}`,
+                order_id: "", // Optional: Can be created via a serverless function for security
+                handler: async function (response) {
+                    try {
+                        const applicationId = new URLSearchParams(window.location.search).get("id");
+                        const appRef = doc(db, "applications", applicationId);
+                        await updateDoc(appRef, {
+                            paymentStatus: "paid",
+                            paymentId: response.razorpay_payment_id
+                        });
+                        showMessage("Payment successful!");
+                        updatePaymentSection('paid');
+                    } catch(err) {
+                        showMessage("Failed to update payment status. Please contact support.", true);
+                    }
+                },
+                prefill: {
+                    name: userProfile.fullName || user.displayName,
+                    email: user.email,
+                    contact: userProfile.contactNumber || ""
+                },
+                notes: {
+                    applicationId: new URLSearchParams(window.location.search).get("id"),
+                    userId: user.uid
+                },
+                theme: {
+                    color: "#4f46e5"
+                }
+            };
+            const rzp = new Razorpay(options);
+            rzp.on('payment.failed', function (response){
+                showMessage(`Payment failed: ${response.error.description}`, true);
+            });
+            rzp.open();
+        }
+
+        // --- HEADER LOGOUT ---
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            signOut(auth).catch((error) => console.error('Sign out error', error));
+        });
+    </script>
 </body>
 </html>
