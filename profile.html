@@ -143,39 +143,109 @@
             }, 2500);
         };
 
-        onAuthStateChanged(auth, user => {
+        // Function to render the profile form with user data
+        const renderProfileForm = (user, profile) => {
+            const displayName = profile.fullName || profile.name || user.displayName || 'New User';
+
+            if (profile.role === 'admin') {
+                document.getElementById('admin-link').classList.remove('hidden');
+            }
+            
+            document.getElementById('user-name-display').textContent = displayName;
+            document.getElementById('user-email-display').textContent = user.email;
+            document.getElementById('user-avatar').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=e0e7ff&color=4f46e5`;
+
+            document.getElementById('fullName').value = profile.fullName || profile.name || '';
+            document.getElementById('fatherName').value = profile.fatherName || '';
+            document.getElementById('dob').value = profile.dob || '';
+            document.getElementById('age').value = profile.age || '';
+            document.getElementById('gender').value = profile.gender || '';
+            document.getElementById('contactNumber').value = profile.contactNumber || '';
+            document.getElementById('country').value = profile.country || '';
+            document.getElementById('city').value = profile.city || '';
+            document.getElementById('collegeName').value = profile.collegeName || '';
+        };
+
+        // Function to load applications and check profile completeness
+        const loadAppliedInternships = async (uid, profile) => {
+            const listEl = document.getElementById('applied-internships-list');
+            listEl.innerHTML = '<p>Loading your applications...</p>';
+
+            // Check if essential profile details are filled
+            const detailsComplete = profile && profile.fullName && profile.contactNumber && profile.collegeName && profile.country && profile.city && profile.dob && profile.gender;
+
+            try {
+                const internshipsSnapshot = await getDocs(collection(db, "internships"));
+                const internshipsMap = new Map();
+                internshipsSnapshot.forEach(doc => internshipsMap.set(doc.id, doc.data()));
+
+                const applicationsRef = collection(db, "applications");
+                const q = query(applicationsRef, where("userId", "==", uid));
+                const applicationsSnapshot = await getDocs(q);
+
+                if (applicationsSnapshot.empty) {
+                    listEl.innerHTML = '<p>You have not applied for any internships yet.</p>';
+                    return;
+                }
+
+                listEl.innerHTML = ''; // Clear loading message
+                applicationsSnapshot.forEach(appDoc => {
+                    const application = appDoc.data();
+                    const internship = internshipsMap.get(application.internshipId);
+                    if (!internship) return;
+
+                    const itemEl = document.createElement('div');
+                    itemEl.className = 'p-4 border rounded-lg bg-gray-50';
+
+                    let courseButtonHtml = '';
+                    if (detailsComplete) {
+                        courseButtonHtml = `<a href="course.html?id=${appDoc.id}" class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700">Go to Course Page</a>`;
+                    } else {
+                        courseButtonHtml = `<button class="incomplete-profile-btn bg-gray-400 text-white font-semibold py-2 px-4 rounded-lg cursor-pointer" title="Please complete your personal information to proceed.">Go to Course Page</button>`;
+                    }
+                    
+                    let otherButtonsHtml = '';
+                    if (application.offerLetterUrl) {
+                        otherButtonsHtml += `<a href="${application.offerLetterUrl}" target="_blank" class="bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-600">View Offer Letter</a>`;
+                    }
+                    
+                    const buttonsHtml = courseButtonHtml + ' ' + otherButtonsHtml;
+
+                    itemEl.innerHTML = `
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
+                            <div>
+                                <h3 class="font-bold text-lg">${internship.title}</h3>
+                                <p class="text-gray-600">${internship.domain}</p>
+                                <p class="text-sm text-gray-500 mt-1">Applied on: ${new Date(application.appliedAt.seconds * 1000).toLocaleDateString()}</p>
+                            </div>
+                            <div class="flex flex-wrap gap-4 mt-4 md:mt-0">
+                                ${buttonsHtml}
+                            </div>
+                        </div>
+                    `;
+                    listEl.appendChild(itemEl);
+                });
+
+            } catch (error) {
+                console.error("Error loading applications:", error);
+                listEl.innerHTML = '<p class="text-red-500">Could not load your applications.</p>';
+            }
+        };
+
+
+        onAuthStateChanged(auth, async (user) => {
             if (user) {
                 const userDocRef = doc(db, "users", user.uid);
                 
-                const loadUserProfile = async () => {
-                    const docSnap = await getDoc(userDocRef);
-                    if (docSnap.exists()) {
-                        const data = docSnap.data();
-                        const displayName = data.fullName || data.name || user.displayName || 'New User';
+                // Fetch user profile data once
+                const docSnap = await getDoc(userDocRef);
+                const userProfileData = docSnap.exists() ? docSnap.data() : {};
 
-                        if (data.role === 'admin') {
-                            document.getElementById('admin-link').classList.remove('hidden');
-                        }
-                        
-                        document.getElementById('user-name-display').textContent = displayName;
-                        document.getElementById('user-email-display').textContent = user.email;
-                        document.getElementById('user-avatar').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=e0e7ff&color=4f46e5`;
+                // Initial page render
+                renderProfileForm(user, userProfileData);
+                loadAppliedInternships(user.uid, userProfileData);
 
-                        document.getElementById('fullName').value = data.fullName || data.name || '';
-                        document.getElementById('fatherName').value = data.fatherName || '';
-                        document.getElementById('dob').value = data.dob || '';
-                        document.getElementById('age').value = data.age || '';
-                        document.getElementById('gender').value = data.gender || '';
-                        document.getElementById('contactNumber').value = data.contactNumber || '';
-                        document.getElementById('country').value = data.country || '';
-                        document.getElementById('city').value = data.city || '';
-                        document.getElementById('collegeName').value = data.collegeName || '';
-                    } else {
-                        document.getElementById('user-name-display').textContent = user.displayName || 'New User';
-                        document.getElementById('user-email-display').textContent = user.email;
-                    }
-                };
-                
+                // Event listener for the profile form submission
                 document.getElementById('profile-form').addEventListener('submit', async (e) => {
                     e.preventDefault();
                     const profileData = {
@@ -194,76 +264,20 @@
                     try {
                         await setDoc(userDocRef, profileData, { merge: true });
                         showNotification("Profile saved successfully!");
-                        document.getElementById('user-name-display').textContent = profileData.fullName;
+                        // Re-render profile and applications to reflect changes immediately
+                        renderProfileForm(user, profileData);
+                        loadAppliedInternships(user.uid, profileData);
                     } catch (error) {
                         showNotification("Error saving profile.", true);
                     }
                 });
 
-                // UPDATED: Function to load applications and documents
-                const loadAppliedInternships = async (uid) => {
-                    const listEl = document.getElementById('applied-internships-list');
-                    listEl.innerHTML = '<p>Loading your applications...</p>';
-
-                    try {
-                        // 1. Fetch all internships to get their details
-                        const internshipsSnapshot = await getDocs(collection(db, "internships"));
-                        const internshipsMap = new Map();
-                        internshipsSnapshot.forEach(doc => internshipsMap.set(doc.id, doc.data()));
-
-                        // 2. Fetch applications for the current user
-                        const applicationsRef = collection(db, "applications");
-                        const q = query(applicationsRef, where("userId", "==", uid));
-                        const applicationsSnapshot = await getDocs(q);
-
-                        if (applicationsSnapshot.empty) {
-                            listEl.innerHTML = '<p>You have not applied for any internships yet.</p>';
-                            return;
-                        }
-
-                        listEl.innerHTML = ''; // Clear loading message
-                        applicationsSnapshot.forEach(appDoc => {
-                            const application = appDoc.data();
-                            const internship = internshipsMap.get(application.internshipId);
-                            if (!internship) return;
-
-                            const itemEl = document.createElement('div');
-                            itemEl.className = 'p-4 border rounded-lg bg-gray-50';
-
-                            // --- MODIFICATION START ---
-                            // Primary button to go to the course page
-                            let buttonsHtml = `<a href="course.html?id=${appDoc.id}" class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700">Go to Course Page</a>`;
-                            
-                            // Add offer letter button if available
-                            if (application.offerLetterUrl) {
-                                buttonsHtml += `<a href="${application.offerLetterUrl}" target="_blank" class="bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-600">View Offer Letter</a>`;
-                            }
-                            // Certificate button is removed as it's now on course.html
-                            // --- MODIFICATION END ---
-                            
-                            itemEl.innerHTML = `
-                                <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
-                                    <div>
-                                        <h3 class="font-bold text-lg">${internship.title}</h3>
-                                        <p class="text-gray-600">${internship.domain}</p>
-                                        <p class="text-sm text-gray-500 mt-1">Applied on: ${new Date(application.appliedAt.seconds * 1000).toLocaleDateString()}</p>
-                                    </div>
-                                    <div class="flex flex-wrap gap-4 mt-4 md:mt-0">
-                                        ${buttonsHtml}
-                                    </div>
-                                </div>
-                            `;
-                            listEl.appendChild(itemEl);
-                        });
-
-                    } catch (error) {
-                        console.error("Error loading applications:", error);
-                        listEl.innerHTML = '<p class="text-red-500">Could not load your applications.</p>';
+                // Event listener for disabled course page buttons
+                document.getElementById('applied-internships-list').addEventListener('click', function(event) {
+                    if (event.target.classList.contains('incomplete-profile-btn')) {
+                        showNotification('Please fill your personal info to access it');
                     }
-                };
-
-                loadUserProfile();
-                loadAppliedInternships(user.uid);
+                });
 
             } else {
                 window.location.href = 'index.html';
