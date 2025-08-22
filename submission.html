@@ -25,6 +25,10 @@
             transition: opacity 0.3s, visibility 0.3s;
         }
         #message-box.show { opacity: 1; visibility: visible; }
+        #sort-paid:checked ~ .dot {
+            transform: translateX(100%);
+            background-color: #4f46e5;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -146,11 +150,14 @@
         const paymentStatusText = app.paymentStatus === 'paid' ? 'Paid' : 'Pending';
         const paymentStatusColor = app.paymentStatus === 'paid' ? 'text-green-600' : 'text-amber-600';
 
-        // Certificate URL input is only shown if the application is verified
-        const certificateInputHtml = app.verified
+        const certificateFieldsHtml = app.verified
             ? `<div>
                 <label class="block text-xs font-medium text-gray-600">Certificate URL</label>
-                <input type="url" id="cert-${app.id}" value="${app.certificateUrl || ''}" class="mt-1 block w-full px-2 py-1 border border-gray-300 rounded-md shadow-sm text-xs">
+                <input type="url" id="cert-url-${app.id}" value="${app.certificateUrl || ''}" class="mt-1 block w-full px-2 py-1 border border-gray-300 rounded-md shadow-sm text-xs">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-600">Certificate No.</label>
+                <input type="text" id="cert-no-${app.id}" value="${app.certificateNo || ''}" class="mt-1 block w-full px-2 py-1 border border-gray-300 rounded-md shadow-sm text-xs">
             </div>`
             : '';
 
@@ -172,7 +179,7 @@
                             <label class="block text-xs font-medium text-gray-600">Offer Letter URL</label>
                             <input type="url" id="offer-${app.id}" value="${app.offerLetterUrl || ''}" class="mt-1 block w-full px-2 py-1 border border-gray-300 rounded-md shadow-sm text-xs">
                         </div>
-                        ${certificateInputHtml}
+                        ${certificateFieldsHtml}
                     </div>
                     <div class="text-right mt-2 flex justify-end gap-2">
                         <button data-appid="${app.id}" class="save-links-btn bg-blue-500 text-white text-xs py-1 px-3 rounded hover:bg-blue-600">Save Links</button>
@@ -200,7 +207,7 @@
                 const aPaid = a.paymentStatus === 'paid' ? -1 : 1;
                 const bPaid = b.paymentStatus === 'paid' ? -1 : 1;
                 if (aPaid !== bPaid) return aPaid - bPaid;
-                return 0; // Keep original order if payment status is same
+                return 0;
             });
         }
 
@@ -252,7 +259,6 @@
             verifyBtn.textContent = '...';
             try {
                 await updateDoc(doc(db, "applications", appId), { verified: isVerifying });
-                // Update local data and re-render to avoid full refetch
                 const appIndex = allApplications.findIndex(a => a.id === appId);
                 if (appIndex > -1) allApplications[appIndex].verified = isVerifying;
                 renderLists();
@@ -268,22 +274,27 @@
             const appId = saveBtn.dataset.appid;
             saveBtn.disabled = true;
             saveBtn.textContent = '...';
+            
             const offerUrl = document.getElementById(`offer-${appId}`).value;
-            const certInput = document.getElementById(`cert-${appId}`);
-            const certUrl = certInput ? certInput.value : ''; // Gracefully handle if cert input doesn't exist
+            const certUrlInput = document.getElementById(`cert-url-${appId}`);
+            const certNoInput = document.getElementById(`cert-no-${appId}`);
+            
+            const certUrl = certUrlInput ? certUrlInput.value : '';
+            const certNo = certNoInput ? certNoInput.value : '';
             
             try {
                 const dataToUpdate = { offerLetterUrl: offerUrl };
-                if (certInput) { // Only update certificate if the field exists
-                    dataToUpdate.certificateUrl = certUrl;
-                }
+                if (certUrlInput) dataToUpdate.certificateUrl = certUrl;
+                if (certNoInput) dataToUpdate.certificateNo = certNo;
+                
                 await updateDoc(doc(db, "applications", appId), dataToUpdate);
                 showMessage('Links saved!');
-                // Update local data
+
                 const appIndex = allApplications.findIndex(a => a.id === appId);
                 if (appIndex > -1) {
                     allApplications[appIndex].offerLetterUrl = offerUrl;
-                    if (certInput) allApplications[appIndex].certificateUrl = certUrl;
+                    if (certUrlInput) allApplications[appIndex].certificateUrl = certUrl;
+                    if (certNoInput) allApplications[appIndex].certificateNo = certNo;
                 }
             } catch (error) {
                 console.error("Error saving links:", error);
