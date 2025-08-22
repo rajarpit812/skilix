@@ -48,9 +48,15 @@
                 <details>
                     <summary class="cursor-pointer font-semibold text-indigo-600">Click to Create a New Internship</summary>
                     <form id="internship-form" class="mt-4">
-                        <div class="mb-4">
-                            <label for="title" class="block text-gray-700 font-medium mb-2">Internship Title</label>
-                            <input type="text" id="title" class="w-full px-4 py-2 border rounded-lg" required>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="mb-4">
+                                <label for="title" class="block text-gray-700 font-medium mb-2">Internship Title</label>
+                                <input type="text" id="title" class="w-full px-4 py-2 border rounded-lg" required>
+                            </div>
+                            <div class="mb-4">
+                                <label for="domain" class="block text-gray-700 font-medium mb-2">Domain (e.g., Web Development)</label>
+                                <input type="text" id="domain" class="w-full px-4 py-2 border rounded-lg" required>
+                            </div>
                         </div>
                         <div class="mb-4">
                             <label for="headline" class="block text-gray-700 font-medium mb-2">Headline</label>
@@ -64,13 +70,15 @@
                             <label for="description" class="block text-gray-700 font-medium mb-2">Description</label>
                             <textarea id="description" rows="4" class="w-full px-4 py-2 border rounded-lg" required></textarea>
                         </div>
-                        <div class="mb-4">
-                            <label for="domain" class="block text-gray-700 font-medium mb-2">Domain (e.g., Web Development)</label>
-                            <input type="text" id="domain" class="w-full px-4 py-2 border rounded-lg" required>
-                        </div>
-                        <div class="mb-4">
-                            <label for="logoUrl" class="block text-gray-700 font-medium mb-2">Logo URL</label>
-                            <input type="url" id="logoUrl" placeholder="https://res.cloudinary.com/..." class="w-full px-4 py-2 border rounded-lg">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="mb-4">
+                                <label for="logoUrl" class="block text-gray-700 font-medium mb-2">Logo URL</label>
+                                <input type="url" id="logoUrl" placeholder="https://res.cloudinary.com/..." class="w-full px-4 py-2 border rounded-lg">
+                            </div>
+                            <div class="mb-4">
+                                <label for="fee" class="block text-gray-700 font-medium mb-2">Internship Fee (INR)</label>
+                                <input type="number" id="fee" placeholder="e.g., 1999" class="w-full px-4 py-2 border rounded-lg">
+                            </div>
                         </div>
                         <button type="submit" id="add-internship-btn" class="bg-indigo-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-indigo-700">
                             Add Internship
@@ -92,8 +100,8 @@
         </main>
     </div>
 
-    <div id="modify-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-lg relative">
+    <div id="modify-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-lg relative my-8">
             <button id="close-modal-btn" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-2xl font-bold">&times;</button>
             <h2 class="text-2xl font-semibold mb-4">Modify Internship</h2>
             <form id="modify-internship-form">
@@ -101,6 +109,10 @@
                 <div class="mb-4">
                     <label for="modify-title" class="block text-gray-700 font-medium mb-2">Internship Title</label>
                     <input type="text" id="modify-title" class="w-full px-4 py-2 border rounded-lg" required>
+                </div>
+                 <div class="mb-4">
+                    <label for="modify-domain" class="block text-gray-700 font-medium mb-2">Domain</label>
+                    <input type="text" id="modify-domain" class="w-full px-4 py-2 border rounded-lg" required>
                 </div>
                 <div class="mb-4">
                     <label for="modify-headline" class="block text-gray-700 font-medium mb-2">Headline</label>
@@ -114,10 +126,6 @@
                     <label for="modify-description" class="block text-gray-700 font-medium mb-2">Description</label>
                     <textarea id="modify-description" rows="4" class="w-full px-4 py-2 border rounded-lg" required></textarea>
                 </div>
-                <div class="mb-4">
-                    <label for="modify-domain" class="block text-gray-700 font-medium mb-2">Domain</label>
-                    <input type="text" id="modify-domain" class="w-full px-4 py-2 border rounded-lg" required>
-                </div>
                  <div class="mb-4">
                     <label for="modify-logoUrl" class="block text-gray-700 font-medium mb-2">Logo URL</label>
                     <input type="url" id="modify-logoUrl" class="w-full px-4 py-2 border rounded-lg">
@@ -125,6 +133,10 @@
                  <div class="mb-4">
                     <label for="modify-brochureUrl" class="block text-gray-700 font-medium mb-2">Brochure URL</label>
                     <input type="url" id="modify-brochureUrl" class="w-full px-4 py-2 border rounded-lg">
+                </div>
+                <div class="mb-4">
+                    <label for="modify-fee" class="block text-gray-700 font-medium mb-2">Internship Fee (INR)</label>
+                    <input type="number" id="modify-fee" class="w-full px-4 py-2 border rounded-lg" required>
                 </div>
 
                 <div class="border-t pt-4 mt-4">
@@ -194,9 +206,7 @@
     const closeModalBtn = document.getElementById('close-modal-btn');
     const userSearchInput = document.getElementById('user-search');
     
-    // NEW DOM elements
     const submissionFieldsList = document.getElementById('submission-fields-list');
-    // REMOVED: const addFieldForm = document.getElementById('add-field-form');
     let currentSubmissionFields = [];
 
     let allUsersWithApps = []; 
@@ -245,7 +255,7 @@
                         <img src="${internship.logoUrl || 'https://placehold.co/60x60/e0e7ff/4f46e5?text=Logo'}" alt="logo" class="w-12 h-12 rounded-md object-cover">
                         <div class="flex-1">
                             <h3 class="text-xl font-bold">${internship.title}</h3>
-                            <p class="text-gray-600">${internship.domain}</p>
+                            <p class="text-gray-600">${internship.domain} - <span class="font-bold text-indigo-600">₹${internship.fee || 0}</span></p>
                             <p class="text-sm font-semibold mt-2">${internship.headline || 'No headline'}</p>
                             <p class="text-sm text-gray-500">${internship.briefIntro || 'No intro'}</p>
                         </div>
@@ -263,7 +273,6 @@
         }
     }
     
-    // NEW function to render submission form fields
     function renderSubmissionFields() {
         submissionFieldsList.innerHTML = '';
         if (currentSubmissionFields.length === 0) {
@@ -393,8 +402,6 @@
         }
     });
 
-    // --- EVENT LISTENERS (ALL FULLY IMPLEMENTED) ---
-
     userSearchInput.addEventListener('keyup', () => {
         const searchTerm = userSearchInput.value.toLowerCase();
         const filteredUsers = allUsersWithApps.filter(user => {
@@ -459,6 +466,7 @@
                 description: document.getElementById('description').value,
                 domain: document.getElementById('domain').value,
                 logoUrl: document.getElementById('logoUrl').value,
+                fee: document.getElementById('fee').value || '0',
                 createdAt: new Date()
             });
             showMessage('Internship added successfully!');
@@ -473,7 +481,6 @@
         }
     });
 
-    // We'll use event delegation for all clicks within the internship list
     internshipsList.addEventListener('click', async (e) => {
         const target = e.target;
         const button = target.closest('button');
@@ -507,6 +514,7 @@
                 document.getElementById('modify-domain').value = data.domain;
                 document.getElementById('modify-logoUrl').value = data.logoUrl || '';
                 document.getElementById('modify-brochureUrl').value = data.brochureUrl || ''; 
+                document.getElementById('modify-fee').value = data.fee || '';
                 
                 currentSubmissionFields = data.submissionFields || [];
                 renderSubmissionFields();
@@ -529,6 +537,7 @@
                 domain: document.getElementById('modify-domain').value,
                 logoUrl: document.getElementById('modify-logoUrl').value,
                 brochureUrl: document.getElementById('modify-brochureUrl').value,
+                fee: document.getElementById('modify-fee').value || '0',
                 submissionFields: currentSubmissionFields
             });
             showMessage('Internship updated successfully!');
@@ -541,20 +550,15 @@
 
     closeModalBtn.addEventListener('click', () => modifyModal.classList.add('hidden'));
     
-    // REMOVED: The problematic 'submit' listener for the nested form is gone.
-
-    // CORRECTED: Combined logic for adding and removing fields into one 'click' listener.
     modifyModal.addEventListener('click', (e) => {
-        // Handle removing a field
         const removeBtn = e.target.closest('.remove-field-btn');
         if (removeBtn) {
             const indexToRemove = parseInt(removeBtn.dataset.index, 10);
             currentSubmissionFields.splice(indexToRemove, 1);
             renderSubmissionFields();
-            return; // Exit after handling
+            return;
         }
 
-        // Handle adding a new field
         const addBtn = e.target.closest('#add-field-btn');
         if (addBtn) {
             const labelInput = document.getElementById('field-label');
@@ -570,7 +574,6 @@
             currentSubmissionFields.push({ label, type });
             renderSubmissionFields();
 
-            // Reset input fields
             labelInput.value = '';
             typeSelect.value = 'text';
         }
