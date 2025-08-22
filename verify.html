@@ -69,8 +69,8 @@
                      <div class="w-16 h-16 bg-red-500 text-white rounded-full flex items-center justify-center mx-auto">
                         <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </div>
-                    <h2 class="text-2xl font-bold text-red-700 mt-4">Certificate Not Found</h2>
-                    <p class="text-gray-700 mt-2">The certificate number entered is invalid or does not exist in our records.</p>
+                    <h2 class="text-2xl font-bold text-red-700 mt-4">Certificate Not Valid</h2>
+                    <p id="error-message" class="text-gray-700 mt-2">The certificate number entered is invalid or does not exist in our records.</p>
                 </div>
             </div>
         </div>
@@ -99,6 +99,20 @@
     const loadingState = document.getElementById('loading-state');
     const verifiedState = document.getElementById('verified-state');
     const notFoundState = document.getElementById('not-found-state');
+    const errorMessage = document.getElementById('error-message');
+
+    const showResult = (state, message = '') => {
+        loadingState.classList.add('hidden');
+        verifiedState.classList.add('hidden');
+        notFoundState.classList.add('hidden');
+
+        if (state === 'verified') {
+            verifiedState.classList.remove('hidden');
+        } else if (state === 'not-found') {
+            errorMessage.textContent = message;
+            notFoundState.classList.remove('hidden');
+        }
+    };
 
     const validateCertificate = async (certificateNumber) => {
         if (!certificateNumber) return;
@@ -114,14 +128,16 @@
             const querySnapshot = await getDocs(q);
 
             if (querySnapshot.empty) {
-                throw new Error("Certificate not found.");
+                showResult('not-found', 'The certificate number entered is invalid or does not exist in our records.');
+                return;
             }
 
             const appDoc = querySnapshot.docs[0];
             const application = appDoc.data();
 
             if (!application.verified) {
-                 throw new Error("Certificate exists but is not yet verified by an admin.");
+                showResult('not-found', 'This certificate number was found, but it has not been officially verified by an administrator yet.');
+                return;
             }
 
             const userDocRef = doc(db, "users", application.userId);
@@ -133,7 +149,8 @@
             ]);
 
             if (!userSnap.exists() || !internshipSnap.exists()) {
-                throw new Error("Associated data could not be found.");
+                showResult('not-found', 'Could not retrieve all required details for this certificate.');
+                return;
             }
 
             const user = userSnap.data();
@@ -144,13 +161,11 @@
             document.getElementById('result-program-title').textContent = internship.title;
             document.getElementById('result-program-domain').textContent = internship.domain;
 
-            loadingState.classList.add('hidden');
-            verifiedState.classList.remove('hidden');
+            showResult('verified');
 
         } catch (error) {
             console.error("Validation error:", error);
-            loadingState.classList.add('hidden');
-            notFoundState.classList.remove('hidden');
+            showResult('not-found', 'An unexpected error occurred. Please try again.');
         }
     };
 
@@ -172,4 +187,3 @@
 </script>
 </body>
 </html>
-
