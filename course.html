@@ -193,7 +193,6 @@
                 brochureLink.classList.remove('hidden');
             }
 
-            // --- PAYMENT SECTION LOGIC ---
             const internshipFee = parseInt(internship.fee, 10);
             if (internshipFee > 0) {
                 document.getElementById('payment-section').classList.remove('hidden');
@@ -202,7 +201,6 @@
                     handlePayment(application, internship, user, userProfile);
                 });
             } else {
-                 // If fee is 0 or not set, hide the payment section
                  document.getElementById('payment-section').classList.add('hidden');
             }
 
@@ -310,12 +308,10 @@
 
             const amountInPaise = parseInt(internship.fee, 10) * 100;
 
-            // --- 1. Create Order on Your Backend ---
-            // This needs a backend endpoint that calls Razorpay's Order API
-            // For now, this is a placeholder. Replace '/create-order' with your actual backend URL.
             let order;
             try {
-                const response = await fetch('/create-order', {
+                // --- UPDATED URL ---
+                const response = await fetch('https://skilix-backend.onrender.com/create-order', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ amount: amountInPaise, currency: 'INR' })
@@ -336,12 +332,11 @@
                 currency: "INR",
                 name: "Skilix",
                 description: `Payment for ${internship.title}`,
-                order_id: order.id, // Comes from your backend
+                order_id: order.id,
                 handler: async function (response) {
-                    // --- 2. Verify Payment on Your Backend ---
-                    // Send payment details to your backend for verification
                     try {
-                        const verificationResponse = await fetch('/verify-payment', {
+                        // --- UPDATED URL ---
+                        const verificationResponse = await fetch('https://skilix-backend.onrender.com/verify-payment', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -356,7 +351,6 @@
                         const result = await verificationResponse.json();
 
                         if (result.status === 'success') {
-                            // --- 3. Update Firestore ONLY after successful verification ---
                             const applicationId = new URLSearchParams(window.location.search).get("id");
                             const appRef = doc(db, "applications", applicationId);
                             await updateDoc(appRef, {
