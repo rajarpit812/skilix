@@ -1,1 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificate Validation - Skilix</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8f9fa; }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4f46e5;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <header class="bg-white shadow-sm">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="index.html" class="font-bold text-2xl">Skil<span class="text-indigo-600">ix</span></a>
+            <div>
+                <a href="index.html" class="text-gray-600 hover:text-indigo-600">Go to Homepage</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-6 py-12">
+        <div class="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-lg border border-gray-200">
+            <h1 class="text-3xl font-bold text-gray-900 text-center mb-6">Validate a Certificate</h1>
+            <p class="text-center text-gray-600 mb-6">Enter a certificate number to check its legitimacy and view the holder's details.</p>
+            <form id="verify-form">
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <input type="text" id="cert-no-input" placeholder="Enter Certificate Number" class="flex-grow w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                    <button type="submit" class="bg-indigo-600 text-white font-semibold py-3 px-8 rounded-lg shadow-md hover:bg-indigo-700">
+                        Validate
+                    </button>
+                </div>
+            </form>
+
+            <div id="result-container" class="mt-8 hidden">
+                <!-- Loading State -->
+                <div id="loading-state" class="text-center py-8 hidden">
+                    <div class="loader mx-auto"></div>
+                    <p class="mt-4 text-gray-600">Checking...</p>
+                </div>
+
+                <!-- Verified State -->
+                <div id="verified-state" class="hidden text-center p-8 border-2 border-dashed border-green-500 rounded-lg bg-green-50">
+                    <div class="w-16 h-16 bg-green-500 text-white rounded-full flex items-center justify-center mx-auto">
+                        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    </div>
+                    <h2 class="text-2xl font-bold text-green-700 mt-4">Certificate is Valid & Legitimate</h2>
+                    <div class="text-left mt-6 space-y-3 text-gray-700">
+                        <p><strong>Certificate Number:</strong> <span id="result-cert-no"></span></p>
+                        <p><strong>Student Name:</strong> <span id="result-student-name"></span></p>
+                        <p><strong>Program Title:</strong> <span id="result-program-title"></span></p>
+                        <p><strong>Program Domain:</strong> <span id="result-program-domain"></span></p>
+                    </div>
+                </div>
+
+                <!-- Not Found State -->
+                <div id="not-found-state" class="hidden text-center p-8 border-2 border-dashed border-red-500 rounded-lg bg-red-50">
+                     <div class="w-16 h-16 bg-red-500 text-white rounded-full flex items-center justify-center mx-auto">
+                        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </div>
+                    <h2 class="text-2xl font-bold text-red-700 mt-4">Certificate Not Found</h2>
+                    <p class="text-gray-700 mt-2">The certificate number entered is invalid or does not exist in our records.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, query, where, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyBrP14baJEyuYYt5xOUt4SeSeUFM3RY2rk",
+        authDomain: "skilix.firebaseapp.com",
+        projectId: "skilix",
+        storageBucket: "skilix.appspot.com",
+        messagingSenderId: "1042532384192",
+        appId: "1:1042532384192:web:c0cc1939bb1ba8f7c69c25",
+        measurementId: "G-H7LB645GR9"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const verifyForm = document.getElementById('verify-form');
+    const certNoInput = document.getElementById('cert-no-input');
+    const resultContainer = document.getElementById('result-container');
+    const loadingState = document.getElementById('loading-state');
+    const verifiedState = document.getElementById('verified-state');
+    const notFoundState = document.getElementById('not-found-state');
+
+    const validateCertificate = async (certificateNumber) => {
+        if (!certificateNumber) return;
+
+        resultContainer.classList.remove('hidden');
+        loadingState.classList.remove('hidden');
+        verifiedState.classList.add('hidden');
+        notFoundState.classList.add('hidden');
+
+        try {
+            const applicationsRef = collection(db, "applications");
+            const q = query(applicationsRef, where("certificateNo", "==", certificateNumber.trim()));
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
+                throw new Error("Certificate not found.");
+            }
+
+            const appDoc = querySnapshot.docs[0];
+            const application = appDoc.data();
+
+            if (!application.verified) {
+                 throw new Error("Certificate exists but is not yet verified by an admin.");
+            }
+
+            const userDocRef = doc(db, "users", application.userId);
+            const internshipDocRef = doc(db, "internships", application.internshipId);
+
+            const [userSnap, internshipSnap] = await Promise.all([
+                getDoc(userDocRef),
+                getDoc(internshipDocRef)
+            ]);
+
+            if (!userSnap.exists() || !internshipSnap.exists()) {
+                throw new Error("Associated data could not be found.");
+            }
+
+            const user = userSnap.data();
+            const internship = internshipSnap.data();
+
+            document.getElementById('result-cert-no').textContent = application.certificateNo;
+            document.getElementById('result-student-name').textContent = user.fullName || user.name;
+            document.getElementById('result-program-title').textContent = internship.title;
+            document.getElementById('result-program-domain').textContent = internship.domain;
+
+            loadingState.classList.add('hidden');
+            verifiedState.classList.remove('hidden');
+
+        } catch (error) {
+            console.error("Validation error:", error);
+            loadingState.classList.add('hidden');
+            notFoundState.classList.remove('hidden');
+        }
+    };
+
+    verifyForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const certNo = certNoInput.value;
+        validateCertificate(certNo);
+    });
+
+    window.addEventListener('load', () => {
+        const params = new URLSearchParams(window.location.search);
+        const certIdFromUrl = params.get('cid');
+        if (certIdFromUrl) {
+            certNoInput.value = certIdFromUrl;
+            validateCertificate(certIdFromUrl);
+        }
+    });
+
+</script>
+</body>
+</html>
 
