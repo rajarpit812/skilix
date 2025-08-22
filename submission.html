@@ -41,17 +41,30 @@
         </header>
 
         <main class="container mx-auto px-6 py-8">
-            <h1 class="text-3xl font-bold text-gray-800 mb-8">Submissions Verification</h1>
+            <div class="flex flex-col md:flex-row justify-between items-center mb-8">
+                <h1 class="text-3xl font-bold text-gray-800">Submissions Verification</h1>
+                <div class="flex items-center gap-4 mt-4 md:mt-0 w-full md:w-auto">
+                    <input type="text" id="search-input" placeholder="Search by name or email..." class="w-full md:w-64 px-4 py-2 border rounded-lg">
+                    <label for="sort-paid" class="flex items-center cursor-pointer">
+                        <span class="text-gray-700 font-medium mr-2">Sort by Paid</span>
+                        <div class="relative">
+                            <input type="checkbox" id="sort-paid" class="sr-only">
+                            <div class="block bg-gray-300 w-10 h-6 rounded-full"></div>
+                            <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition"></div>
+                        </div>
+                    </label>
+                </div>
+            </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
                 
                 <section id="unverified-section" class="bg-white p-6 rounded-lg shadow-md">
-                    <h2 class="text-2xl font-semibold mb-4 text-amber-600">Unverified Submissions</h2>
+                    <h2 class="text-2xl font-semibold mb-4 text-amber-600">Pending Verification</h2>
                     <div id="unverified-list" class="space-y-6"></div>
                 </section>
 
                 <section id="verified-section" class="bg-white p-6 rounded-lg shadow-md">
-                    <h2 class="text-2xl font-semibold mb-4 text-green-600">Verified Submissions</h2>
+                    <h2 class="text-2xl font-semibold mb-4 text-green-600">Completed Verification</h2>
                     <div id="verified-list" class="space-y-6"></div>
                 </section>
 
@@ -97,6 +110,12 @@
     const unverifiedList = document.getElementById('unverified-list');
     const verifiedList = document.getElementById('verified-list');
     const messageBox = document.getElementById('message-box');
+    const searchInput = document.getElementById('search-input');
+    const sortPaidToggle = document.getElementById('sort-paid');
+
+    let allApplications = [];
+    let internshipsMap = new Map();
+    let usersMap = new Map();
 
     const showMessage = (message, isError = false) => {
         messageBox.textContent = message;
@@ -111,23 +130,36 @@
         return userDoc.exists() && userDoc.data().role === 'admin';
     }
 
-    const renderStudentCard = (student, internshipsMap, isVerifiedSection) => {
-        let applicationsHtml = student.applications.map(app => {
-            const internship = internshipsMap.get(app.internshipId);
-            if (!internship) return '';
+    const renderApplicationCard = (app) => {
+        const student = usersMap.get(app.userId);
+        const internship = internshipsMap.get(app.internshipId);
+        if (!student || !internship) return '';
 
-            const submissionDetails = Object.entries(app.submissions || {})
-                .map(([key, value]) => `<p class="text-xs text-gray-600"><strong>${key}:</strong> <a href="${value}" target="_blank" class="text-blue-500 hover:underline">${value}</a></p>`)
-                .join('');
+        const submissionDetails = Object.entries(app.submissions || {})
+            .map(([key, value]) => `<p class="text-xs text-gray-600"><strong>${key}:</strong> <a href="${value}" target="_blank" class="text-blue-500 hover:underline">${value}</a></p>`)
+            .join('');
 
-            const verifyButtonHtml = isVerifiedSection
-                ? `<button data-appid="${app.id}" class="unverify-btn bg-amber-500 text-white text-xs py-1 px-3 rounded hover:bg-amber-600">Un-verify</button>`
-                : `<button data-appid="${app.id}" class="verify-btn bg-green-500 text-white text-xs py-1 px-3 rounded hover:bg-green-600">Verify</button>`;
-            
-            const paymentStatusText = app.paymentStatus === 'paid' ? 'Paid' : 'Pending';
-            const paymentStatusColor = app.paymentStatus === 'paid' ? 'text-green-600' : 'text-amber-600';
+        const verifyButtonHtml = app.verified
+            ? `<button data-appid="${app.id}" class="unverify-btn bg-amber-500 text-white text-xs py-1 px-3 rounded hover:bg-amber-600">Un-verify</button>`
+            : `<button data-appid="${app.id}" class="verify-btn bg-green-500 text-white text-xs py-1 px-3 rounded hover:bg-green-600">Verify</button>`;
+        
+        const paymentStatusText = app.paymentStatus === 'paid' ? 'Paid' : 'Pending';
+        const paymentStatusColor = app.paymentStatus === 'paid' ? 'text-green-600' : 'text-amber-600';
 
-            return `
+        // Certificate URL input is only shown if the application is verified
+        const certificateInputHtml = app.verified
+            ? `<div>
+                <label class="block text-xs font-medium text-gray-600">Certificate URL</label>
+                <input type="url" id="cert-${app.id}" value="${app.certificateUrl || ''}" class="mt-1 block w-full px-2 py-1 border border-gray-300 rounded-md shadow-sm text-xs">
+            </div>`
+            : '';
+
+        return `
+            <div class="border p-4 rounded-lg bg-white">
+                <div class="mb-2">
+                    <h3 class="text-lg font-bold">${student.fullName || student.name}</h3>
+                    <p class="text-sm text-gray-500">${student.email}</p>
+                </div>
                 <div class="mt-2 pt-2 border-t">
                     <div class="flex justify-between items-start mb-2">
                         <h4 class="font-semibold text-sm">${internship.title}</h4>
@@ -140,33 +172,47 @@
                             <label class="block text-xs font-medium text-gray-600">Offer Letter URL</label>
                             <input type="url" id="offer-${app.id}" value="${app.offerLetterUrl || ''}" class="mt-1 block w-full px-2 py-1 border border-gray-300 rounded-md shadow-sm text-xs">
                         </div>
-                        <div>
-                            <label class="block text-xs font-medium text-gray-600">Certificate URL</label>
-                            <input type="url" id="cert-${app.id}" value="${app.certificateUrl || ''}" class="mt-1 block w-full px-2 py-1 border border-gray-300 rounded-md shadow-sm text-xs">
-                        </div>
+                        ${certificateInputHtml}
                     </div>
                     <div class="text-right mt-2 flex justify-end gap-2">
                         <button data-appid="${app.id}" class="save-links-btn bg-blue-500 text-white text-xs py-1 px-3 rounded hover:bg-blue-600">Save Links</button>
-                        ${app.verified && isVerifiedSection ? verifyButtonHtml : !app.verified ? verifyButtonHtml : ''}
+                        ${verifyButtonHtml}
                     </div>
                 </div>
-            `;
-        }).join('');
-
-        return `
-            <div class="border p-4 rounded-lg bg-white">
-                <h3 class="text-lg font-bold">${student.fullName || student.name}</h3>
-                <p class="text-sm text-gray-500">${student.email}</p>
-                <div class="mt-2 space-y-2">${applicationsHtml}</div>
             </div>
         `;
     };
     
-    async function loadAndRenderSubmissions() {
-        loadingState.classList.remove('hidden');
-        unverifiedList.innerHTML = '';
-        verifiedList.innerHTML = '';
+    function renderLists() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const sortByPaid = sortPaidToggle.checked;
 
+        let filteredApps = allApplications.filter(app => {
+            const student = usersMap.get(app.userId);
+            if (!student) return false;
+            const name = (student.fullName || student.name || '').toLowerCase();
+            const email = (student.email || '').toLowerCase();
+            return name.includes(searchTerm) || email.includes(searchTerm);
+        });
+
+        if (sortByPaid) {
+            filteredApps.sort((a, b) => {
+                const aPaid = a.paymentStatus === 'paid' ? -1 : 1;
+                const bPaid = b.paymentStatus === 'paid' ? -1 : 1;
+                if (aPaid !== bPaid) return aPaid - bPaid;
+                return 0; // Keep original order if payment status is same
+            });
+        }
+
+        const unverifiedHtml = filteredApps.filter(app => !app.verified).map(renderApplicationCard).join('');
+        const verifiedHtml = filteredApps.filter(app => app.verified).map(renderApplicationCard).join('');
+
+        unverifiedList.innerHTML = unverifiedHtml || '<p class="text-gray-500">No matching unverified submissions.</p>';
+        verifiedList.innerHTML = verifiedHtml || '<p class="text-gray-500">No matching verified submissions.</p>';
+    }
+
+    async function fetchData() {
+        loadingState.classList.remove('hidden');
         try {
             const [usersSnap, appsSnap, internshipsSnap] = await Promise.all([
                 getDocs(collection(db, "users")),
@@ -174,46 +220,22 @@
                 getDocs(collection(db, "internships"))
             ]);
 
-            const internshipsMap = new Map(internshipsSnap.docs.map(doc => [doc.id, doc.data()]));
-            const usersMap = new Map();
-
+            internshipsMap = new Map(internshipsSnap.docs.map(doc => [doc.id, doc.data()]));
+            usersMap = new Map();
             usersSnap.docs.forEach(doc => {
                 if (doc.data().role !== 'admin') {
-                    usersMap.set(doc.id, { ...doc.data(), id: doc.id, applications: [] });
+                    usersMap.set(doc.id, { ...doc.data(), id: doc.id });
                 }
             });
 
-            appsSnap.docs.forEach(appDoc => {
-                const appData = appDoc.data();
-                if (appData.submissions && usersMap.has(appData.userId)) {
-                    usersMap.get(appData.userId).applications.push({ ...appData, id: appDoc.id });
-                }
-            });
+            allApplications = appsSnap.docs
+                .map(doc => ({ ...doc.data(), id: doc.id }))
+                .filter(app => app.submissions && usersMap.has(app.userId));
 
-            const unverifiedStudents = [];
-            const verifiedStudents = [];
-
-            for (const student of usersMap.values()) {
-                if (student.applications.length > 0) {
-                    const allVerified = student.applications.every(app => app.verified);
-                    if (allVerified) {
-                        verifiedStudents.push(student);
-                    } else {
-                        unverifiedStudents.push(student);
-                    }
-                }
-            }
-
-            unverifiedList.innerHTML = unverifiedStudents.length > 0 
-                ? unverifiedStudents.map(s => renderStudentCard(s, internshipsMap, false)).join('')
-                : '<p class="text-gray-500">No unverified submissions found.</p>';
-
-            verifiedList.innerHTML = verifiedStudents.length > 0
-                ? verifiedStudents.map(s => renderStudentCard(s, internshipsMap, true)).join('')
-                : '<p class="text-gray-500">No students with all submissions verified.</p>';
+            renderLists();
 
         } catch (error) {
-            console.error("Error loading submissions:", error);
+            console.error("Error loading data:", error);
             unverifiedList.innerHTML = '<p class="text-red-500">Could not load data.</p>';
         } finally {
             loadingState.classList.add('hidden');
@@ -222,7 +244,6 @@
     }
 
     async function handleEvent(e) {
-        // Handle Verification/Un-verification
         const verifyBtn = e.target.closest('.verify-btn, .unverify-btn');
         if (verifyBtn) {
             const isVerifying = verifyBtn.classList.contains('verify-btn');
@@ -231,7 +252,10 @@
             verifyBtn.textContent = '...';
             try {
                 await updateDoc(doc(db, "applications", appId), { verified: isVerifying });
-                loadAndRenderSubmissions();
+                // Update local data and re-render to avoid full refetch
+                const appIndex = allApplications.findIndex(a => a.id === appId);
+                if (appIndex > -1) allApplications[appIndex].verified = isVerifying;
+                renderLists();
             } catch (error) {
                 console.error(`Error ${isVerifying ? 'verifying' : 'un-verifying'} submission:`, error);
                 verifyBtn.disabled = false;
@@ -239,20 +263,28 @@
             return;
         }
 
-        // Handle Saving Links
         const saveBtn = e.target.closest('.save-links-btn');
         if (saveBtn) {
             const appId = saveBtn.dataset.appid;
             saveBtn.disabled = true;
             saveBtn.textContent = '...';
             const offerUrl = document.getElementById(`offer-${appId}`).value;
-            const certUrl = document.getElementById(`cert-${appId}`).value;
+            const certInput = document.getElementById(`cert-${appId}`);
+            const certUrl = certInput ? certInput.value : ''; // Gracefully handle if cert input doesn't exist
+            
             try {
-                await updateDoc(doc(db, "applications", appId), {
-                    offerLetterUrl: offerUrl,
-                    certificateUrl: certUrl
-                });
+                const dataToUpdate = { offerLetterUrl: offerUrl };
+                if (certInput) { // Only update certificate if the field exists
+                    dataToUpdate.certificateUrl = certUrl;
+                }
+                await updateDoc(doc(db, "applications", appId), dataToUpdate);
                 showMessage('Links saved!');
+                // Update local data
+                const appIndex = allApplications.findIndex(a => a.id === appId);
+                if (appIndex > -1) {
+                    allApplications[appIndex].offerLetterUrl = offerUrl;
+                    if (certInput) allApplications[appIndex].certificateUrl = certUrl;
+                }
             } catch (error) {
                 console.error("Error saving links:", error);
                 showMessage('Failed to save links.', true);
@@ -266,7 +298,9 @@
     onAuthStateChanged(auth, async (user) => {
         const isAdmin = await checkAdminRole(user);
         if (isAdmin) {
-            loadAndRenderSubmissions();
+            await fetchData();
+            searchInput.addEventListener('input', renderLists);
+            sortPaidToggle.addEventListener('change', renderLists);
             unverifiedList.addEventListener('click', handleEvent);
             verifiedList.addEventListener('click', handleEvent);
         } else {
