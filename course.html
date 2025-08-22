@@ -70,10 +70,10 @@
                 </form>
             </section>
             
-            <section class="bg-white rounded-lg shadow-lg p-8 border border-gray-200">
+            <section id="payment-section" class="hidden bg-white rounded-lg shadow-lg p-8 border border-gray-200">
                 <h2 class="text-2xl font-bold text-gray-900 mb-4">Payment</h2>
                 <div id="payment-details">
-                     <p class="text-lg font-semibold text-gray-800">Course Fee: ₹1999.00</p>
+                     <p id="course-fee-text" class="text-lg font-semibold text-gray-800">Course Fee: ₹0.00</p>
                      <p id="payment-status-text" class="mt-2 text-sm font-medium"></p>
                      <button id="pay-btn" class="w-full max-w-xs mt-4 bg-indigo-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:bg-indigo-700 transition-transform hover:scale-105">
                         Pay Now
@@ -122,13 +122,11 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // --- DOM ELEMENTS ---
         const mainContent = document.getElementById('main-content');
         const loadingState = document.getElementById('loading-state');
         const accessDenied = document.getElementById('access-denied');
         const messageBox = document.getElementById('message-box');
 
-        // --- UTILITY FUNCTIONS ---
         const showMessage = (message, isError = false) => {
             messageBox.textContent = message;
             messageBox.style.backgroundColor = isError ? '#ef4444' : '#22c55e';
@@ -136,7 +134,6 @@
             setTimeout(() => messageBox.classList.remove('show'), 3000);
         };
 
-        // --- PAGE INITIALIZATION ---
         onAuthStateChanged(auth, async (user) => {
             if (!user) {
                 window.location.href = 'index.html';
@@ -153,7 +150,6 @@
             }
 
             try {
-                // --- SECURITY CHECK ---
                 const appRef = doc(db, "applications", applicationId);
                 const appSnap = await getDoc(appRef);
 
@@ -165,7 +161,6 @@
 
                 const application = appSnap.data();
                 
-                // --- DATA FETCHING ---
                 const internshipRef = doc(db, "internships", application.internshipId);
                 const userProfileRef = doc(db, "users", user.uid);
                 const [internshipSnap, userProfileSnap] = await Promise.all([getDoc(internshipRef), getDoc(userProfileRef)]);
@@ -177,7 +172,6 @@
                 const internship = internshipSnap.data();
                 const userProfile = userProfileSnap.data() || {};
                 
-                // --- RENDER PAGE CONTENT ---
                 renderPage(application, internship, user, userProfile);
                 
                 loadingState.classList.add('hidden');
@@ -189,9 +183,7 @@
             }
         });
 
-        // --- MAIN RENDER FUNCTION ---
         function renderPage(application, internship, user, userProfile) {
-            // Populate Header
             document.getElementById("internship-title").textContent = internship.title;
             document.getElementById("internship-domain").textContent = internship.domain;
             document.getElementById("internship-headline").textContent = internship.headline;
@@ -201,32 +193,38 @@
                 brochureLink.classList.remove('hidden');
             }
 
-            // Render Payment Section
-            updatePaymentSection(application.paymentStatus);
+            // --- PAYMENT SECTION LOGIC ---
+            const internshipFee = parseInt(internship.fee, 10);
+            if (internshipFee > 0) {
+                document.getElementById('payment-section').classList.remove('hidden');
+                updatePaymentSection(application.paymentStatus, internshipFee);
+                document.getElementById('pay-btn').addEventListener('click', () => {
+                    handlePayment(application, internship, user, userProfile);
+                });
+            } else {
+                 // If fee is 0 or not set, hide the payment section
+                 document.getElementById('payment-section').classList.add('hidden');
+            }
 
-            // Render Certificate Section
             if (application.certificateUrl) {
                 document.getElementById('certificate-section').classList.remove('hidden');
                 document.getElementById('certificate-link').href = application.certificateUrl;
             }
 
-            // Render Dynamic Submission Form
             renderSubmissionForm(internship.submissionFields || [], application.submissions || {});
-
-            // --- EVENT LISTENERS ---
-            document.getElementById('pay-btn').addEventListener('click', () => {
-                handlePayment(application, internship, user, userProfile);
-            });
 
             document.getElementById('submission-form').addEventListener('submit', (e) => {
                 e.preventDefault();
-                handleSubmission(application.internshipId, user.uid);
+                handleSubmission();
             });
         }
         
-        function updatePaymentSection(status) {
+        function updatePaymentSection(status, fee) {
             const payBtn = document.getElementById('pay-btn');
             const statusText = document.getElementById('payment-status-text');
+            const feeText = document.getElementById('course-fee-text');
+
+            feeText.textContent = `Course Fee: ₹${fee}.00`;
 
             if (status === 'paid') {
                 statusText.textContent = 'Payment Successful ✅';
@@ -243,7 +241,7 @@
         
         function renderSubmissionForm(fields, existingSubmissions) {
             const container = document.getElementById('dynamic-form-fields');
-            container.innerHTML = ''; // Clear previous fields
+            container.innerHTML = '';
             
             if (!fields || fields.length === 0) {
                 container.innerHTML = '<p class="text-gray-500">No submission tasks required for this internship.</p>';
@@ -258,8 +256,6 @@
                 const fieldWrapper = document.createElement('div');
                 let inputHtml = '';
 
-                // Note: File uploads require Firebase Storage and more complex backend logic.
-                // This example handles the UI for it, but not the upload process.
                 if (field.type === 'file') {
                     inputHtml = `<input type="file" id="${fieldId}" name="${field.label}" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">`;
                 } else {
@@ -281,9 +277,8 @@
             const submissionData = {};
 
             for (const [key, value] of formData.entries()) {
-                // For file inputs, we'd handle the file object. Here we just store the name.
                 if (value instanceof File) {
-                    submissionData[key] = value.name; // Placeholder for file upload logic
+                    submissionData[key] = value.name;
                 } else {
                     submissionData[key] = value;
                 }
@@ -308,26 +303,76 @@
             }
         }
         
-        function handlePayment(application, internship, user, userProfile) {
+        async function handlePayment(application, internship, user, userProfile) {
+            const payBtn = document.getElementById('pay-btn');
+            payBtn.disabled = true;
+            payBtn.textContent = 'Processing...';
+
+            const amountInPaise = parseInt(internship.fee, 10) * 100;
+
+            // --- 1. Create Order on Your Backend ---
+            // This needs a backend endpoint that calls Razorpay's Order API
+            // For now, this is a placeholder. Replace '/create-order' with your actual backend URL.
+            let order;
+            try {
+                const response = await fetch('/create-order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ amount: amountInPaise, currency: 'INR' })
+                });
+                if (!response.ok) throw new Error('Failed to create order.');
+                order = await response.json();
+            } catch (error) {
+                console.error("Order creation failed:", error);
+                showMessage("Payment failed: Could not connect to the server.", true);
+                payBtn.disabled = false;
+                payBtn.textContent = 'Pay Now';
+                return;
+            }
+
             const options = {
-                key: "YOUR_RAZORPAY_KEY_ID", // Replace with your live Key ID
-                amount: 199900, // Amount is in currency subunits. e.g., 50000 for ₹500.00
+                key: "rzp_live_R8XAgH7yeD9jKC", 
+                amount: order.amount,
                 currency: "INR",
                 name: "Skilix",
                 description: `Payment for ${internship.title}`,
-                order_id: "", // Optional: Can be created via a serverless function for security
+                order_id: order.id, // Comes from your backend
                 handler: async function (response) {
+                    // --- 2. Verify Payment on Your Backend ---
+                    // Send payment details to your backend for verification
                     try {
-                        const applicationId = new URLSearchParams(window.location.search).get("id");
-                        const appRef = doc(db, "applications", applicationId);
-                        await updateDoc(appRef, {
-                            paymentStatus: "paid",
-                            paymentId: response.razorpay_payment_id
+                        const verificationResponse = await fetch('/verify-payment', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_signature: response.razorpay_signature,
+                            })
                         });
-                        showMessage("Payment successful!");
-                        updatePaymentSection('paid');
+
+                        if (!verificationResponse.ok) throw new Error('Payment verification failed.');
+                        
+                        const result = await verificationResponse.json();
+
+                        if (result.status === 'success') {
+                            // --- 3. Update Firestore ONLY after successful verification ---
+                            const applicationId = new URLSearchParams(window.location.search).get("id");
+                            const appRef = doc(db, "applications", applicationId);
+                            await updateDoc(appRef, {
+                                paymentStatus: "paid",
+                                paymentId: response.razorpay_payment_id,
+                                orderId: response.razorpay_order_id
+                            });
+                            showMessage("Payment successful!");
+                            updatePaymentSection('paid', parseInt(internship.fee, 10));
+                        } else {
+                            throw new Error('Signature verification returned failure.');
+                        }
+
                     } catch(err) {
-                        showMessage("Failed to update payment status. Please contact support.", true);
+                        console.error("Verification or DB update failed:", err);
+                        showMessage("Payment verification failed. Please contact support.", true);
                     }
                 },
                 prefill: {
@@ -346,11 +391,12 @@
             const rzp = new Razorpay(options);
             rzp.on('payment.failed', function (response){
                 showMessage(`Payment failed: ${response.error.description}`, true);
+                payBtn.disabled = false;
+                payBtn.textContent = 'Pay Now';
             });
             rzp.open();
         }
 
-        // --- HEADER LOGOUT ---
         document.getElementById('logout-btn').addEventListener('click', () => {
             signOut(auth).catch((error) => console.error('Sign out error', error));
         });
