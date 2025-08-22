@@ -17,6 +17,14 @@
             animation: spin 1s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #message-box {
+            position: fixed; bottom: 20px; left: 50%;
+            transform: translateX(-50%); padding: 12px 24px;
+            border-radius: 8px; color: white; z-index: 100;
+            opacity: 0; visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        #message-box.show { opacity: 1; visibility: visible; }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -37,20 +45,14 @@
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
                 
-                <!-- Unverified Section -->
                 <section id="unverified-section" class="bg-white p-6 rounded-lg shadow-md">
                     <h2 class="text-2xl font-semibold mb-4 text-amber-600">Unverified Submissions</h2>
-                    <div id="unverified-list" class="space-y-6">
-                        <!-- Unverified students will be loaded here -->
-                    </div>
+                    <div id="unverified-list" class="space-y-6"></div>
                 </section>
 
-                <!-- Verified Section -->
                 <section id="verified-section" class="bg-white p-6 rounded-lg shadow-md">
                     <h2 class="text-2xl font-semibold mb-4 text-green-600">Verified Submissions</h2>
-                    <div id="verified-list" class="space-y-6">
-                        <!-- Verified students will be loaded here -->
-                    </div>
+                    <div id="verified-list" class="space-y-6"></div>
                 </section>
 
             </div>
@@ -67,6 +69,8 @@
         <p class="text-xl mt-4">You do not have permission to view this page.</p>
         <a href="index.html" class="mt-8 inline-block bg-indigo-600 text-white py-3 px-6 rounded-lg">Go to Homepage</a>
     </div>
+    
+    <div id="message-box"></div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -92,6 +96,14 @@
     const loadingState = document.getElementById('loading-state');
     const unverifiedList = document.getElementById('unverified-list');
     const verifiedList = document.getElementById('verified-list');
+    const messageBox = document.getElementById('message-box');
+
+    const showMessage = (message, isError = false) => {
+        messageBox.textContent = message;
+        messageBox.style.backgroundColor = isError ? '#ef4444' : '#22c55e';
+        messageBox.classList.add('show');
+        setTimeout(() => messageBox.classList.remove('show'), 3000);
+    };
 
     async function checkAdminRole(user) {
         if (!user) return false;
@@ -108,17 +120,35 @@
                 .map(([key, value]) => `<p class="text-xs text-gray-600"><strong>${key}:</strong> <a href="${value}" target="_blank" class="text-blue-500 hover:underline">${value}</a></p>`)
                 .join('');
 
-            const buttonHtml = isVerifiedSection
+            const verifyButtonHtml = isVerifiedSection
                 ? `<button data-appid="${app.id}" class="unverify-btn bg-amber-500 text-white text-xs py-1 px-3 rounded hover:bg-amber-600">Un-verify</button>`
                 : `<button data-appid="${app.id}" class="verify-btn bg-green-500 text-white text-xs py-1 px-3 rounded hover:bg-green-600">Verify</button>`;
+            
+            const paymentStatusText = app.paymentStatus === 'paid' ? 'Paid' : 'Pending';
+            const paymentStatusColor = app.paymentStatus === 'paid' ? 'text-green-600' : 'text-amber-600';
 
             return `
-                <div class="mt-2 pt-2 border-t flex justify-between items-center">
-                    <div>
+                <div class="mt-2 pt-2 border-t">
+                    <div class="flex justify-between items-start mb-2">
                         <h4 class="font-semibold text-sm">${internship.title}</h4>
-                        <div class="mt-1">${submissionDetails}</div>
+                        <span class="text-xs font-bold ${paymentStatusColor}">${paymentStatusText.toUpperCase()}</span>
                     </div>
-                    ${app.verified && isVerifiedSection ? buttonHtml : !app.verified ? buttonHtml : ''}
+                    <div class="mt-1 text-xs">${submissionDetails}</div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600">Offer Letter URL</label>
+                            <input type="url" id="offer-${app.id}" value="${app.offerLetterUrl || ''}" class="mt-1 block w-full px-2 py-1 border border-gray-300 rounded-md shadow-sm text-xs">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600">Certificate URL</label>
+                            <input type="url" id="cert-${app.id}" value="${app.certificateUrl || ''}" class="mt-1 block w-full px-2 py-1 border border-gray-300 rounded-md shadow-sm text-xs">
+                        </div>
+                    </div>
+                    <div class="text-right mt-2 flex justify-end gap-2">
+                        <button data-appid="${app.id}" class="save-links-btn bg-blue-500 text-white text-xs py-1 px-3 rounded hover:bg-blue-600">Save Links</button>
+                        ${app.verified && isVerifiedSection ? verifyButtonHtml : !app.verified ? verifyButtonHtml : ''}
+                    </div>
                 </div>
             `;
         }).join('');
@@ -191,20 +221,45 @@
         }
     }
 
-    async function handleVerification(e, verify) {
-        const button = e.target.closest(verify ? '.verify-btn' : '.unverify-btn');
-        if (!button) return;
+    async function handleEvent(e) {
+        // Handle Verification/Un-verification
+        const verifyBtn = e.target.closest('.verify-btn, .unverify-btn');
+        if (verifyBtn) {
+            const isVerifying = verifyBtn.classList.contains('verify-btn');
+            const appId = verifyBtn.dataset.appid;
+            verifyBtn.disabled = true;
+            verifyBtn.textContent = '...';
+            try {
+                await updateDoc(doc(db, "applications", appId), { verified: isVerifying });
+                loadAndRenderSubmissions();
+            } catch (error) {
+                console.error(`Error ${isVerifying ? 'verifying' : 'un-verifying'} submission:`, error);
+                verifyBtn.disabled = false;
+            }
+            return;
+        }
 
-        const appId = button.dataset.appid;
-        button.disabled = true;
-        button.textContent = '...';
-
-        try {
-            await updateDoc(doc(db, "applications", appId), { verified: verify });
-            loadAndRenderSubmissions(); // Refresh the entire view
-        } catch (error) {
-            console.error(`Error ${verify ? 'verifying' : 'un-verifying'} submission:`, error);
-            button.disabled = false;
+        // Handle Saving Links
+        const saveBtn = e.target.closest('.save-links-btn');
+        if (saveBtn) {
+            const appId = saveBtn.dataset.appid;
+            saveBtn.disabled = true;
+            saveBtn.textContent = '...';
+            const offerUrl = document.getElementById(`offer-${appId}`).value;
+            const certUrl = document.getElementById(`cert-${appId}`).value;
+            try {
+                await updateDoc(doc(db, "applications", appId), {
+                    offerLetterUrl: offerUrl,
+                    certificateUrl: certUrl
+                });
+                showMessage('Links saved!');
+            } catch (error) {
+                console.error("Error saving links:", error);
+                showMessage('Failed to save links.', true);
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save Links';
+            }
         }
     }
 
@@ -212,8 +267,8 @@
         const isAdmin = await checkAdminRole(user);
         if (isAdmin) {
             loadAndRenderSubmissions();
-            unverifiedList.addEventListener('click', (e) => handleVerification(e, true));
-            verifiedList.addEventListener('click', (e) => handleVerification(e, false));
+            unverifiedList.addEventListener('click', handleEvent);
+            verifiedList.addEventListener('click', handleEvent);
         } else {
             loadingState.classList.add('hidden');
             accessDenied.classList.remove('hidden');
