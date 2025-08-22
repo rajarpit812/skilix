@@ -143,7 +143,6 @@
             }, 2500);
         };
 
-        // Function to render the profile form with user data
         const renderProfileForm = (user, profile) => {
             const displayName = profile.fullName || profile.name || user.displayName || 'New User';
 
@@ -166,13 +165,11 @@
             document.getElementById('collegeName').value = profile.collegeName || '';
         };
 
-        // Function to load applications and check profile completeness
         const loadAppliedInternships = async (uid, profile) => {
             const listEl = document.getElementById('applied-internships-list');
             listEl.innerHTML = '<p>Loading your applications...</p>';
 
-            // Check if essential profile details are filled
-            const detailsComplete = profile && profile.fullName && profile.contactNumber && profile.collegeName && profile.country && profile.city && profile.dob && profile.gender;
+            const detailsComplete = profile && profile.fullName && profile.contactNumber && profile.collegeName;
 
             try {
                 const internshipsSnapshot = await getDocs(collection(db, "internships"));
@@ -188,7 +185,7 @@
                     return;
                 }
 
-                listEl.innerHTML = ''; // Clear loading message
+                listEl.innerHTML = '';
                 applicationsSnapshot.forEach(appDoc => {
                     const application = appDoc.data();
                     const internship = internshipsMap.get(application.internshipId);
@@ -199,15 +196,21 @@
 
                     let courseButtonHtml = '';
                     if (detailsComplete) {
-                        courseButtonHtml = `<a href="course.html?id=${appDoc.id}" class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700">Go to Course Page</a>`;
+                        courseButtonHtml = `<a href="course.html?id=${appDoc.id}" class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700">Go to Course</a>`;
                     } else {
-                        courseButtonHtml = `<button class="incomplete-profile-btn bg-gray-400 text-white font-semibold py-2 px-4 rounded-lg cursor-pointer" title="Please complete your personal information to proceed.">Go to Course Page</button>`;
+                        courseButtonHtml = `<button class="incomplete-profile-btn bg-gray-400 text-white font-semibold py-2 px-4 rounded-lg cursor-pointer" title="Please complete your personal information.">Go to Course</button>`;
                     }
                     
                     let otherButtonsHtml = '';
                     if (application.offerLetterUrl) {
                         otherButtonsHtml += `<a href="${application.offerLetterUrl}" target="_blank" class="bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-600">View Offer Letter</a>`;
                     }
+                    // --- FIX STARTS HERE ---
+                    // Add the certificate button back if the URL exists
+                    if (application.certificateUrl) {
+                        otherButtonsHtml += `<a href="${application.certificateUrl}" target="_blank" class="bg-green-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-600">Download Certificate</a>`;
+                    }
+                    // --- FIX ENDS HERE ---
                     
                     const buttonsHtml = courseButtonHtml + ' ' + otherButtonsHtml;
 
@@ -237,15 +240,12 @@
             if (user) {
                 const userDocRef = doc(db, "users", user.uid);
                 
-                // Fetch user profile data once
                 const docSnap = await getDoc(userDocRef);
                 const userProfileData = docSnap.exists() ? docSnap.data() : {};
 
-                // Initial page render
                 renderProfileForm(user, userProfileData);
                 loadAppliedInternships(user.uid, userProfileData);
 
-                // Event listener for the profile form submission
                 document.getElementById('profile-form').addEventListener('submit', async (e) => {
                     e.preventDefault();
                     const profileData = {
@@ -264,7 +264,6 @@
                     try {
                         await setDoc(userDocRef, profileData, { merge: true });
                         showNotification("Profile saved successfully!");
-                        // Re-render profile and applications to reflect changes immediately
                         renderProfileForm(user, profileData);
                         loadAppliedInternships(user.uid, profileData);
                     } catch (error) {
@@ -272,10 +271,9 @@
                     }
                 });
 
-                // Event listener for disabled course page buttons
                 document.getElementById('applied-internships-list').addEventListener('click', function(event) {
                     if (event.target.classList.contains('incomplete-profile-btn')) {
-                        showNotification('Please fill your personal info to access it');
+                        showNotification('Please fill your personal info to access the course page.');
                     }
                 });
 
