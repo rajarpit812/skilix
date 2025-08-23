@@ -354,7 +354,7 @@
 
             let order;
             try {
-                const response = await fetch('https://skilix-backend.onrender.com/create-order', {
+                const response = await fetch('https://createorder-r6zyxpljua-uc.a.run.app', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ amount: amountInPaise, currency: 'INR' })
@@ -378,7 +378,7 @@
                 order_id: order.id,
                 handler: async function (response) {
                     try {
-                        const verificationResponse = await fetch('https://skilix-backend.onrender.com/verify-payment', {
+                        const verificationResponse = await fetch('https://verifypayment-r6zyxpljua-uc.a.run.app', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
