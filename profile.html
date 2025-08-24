@@ -13,11 +13,25 @@
         }
         .container { max-width: 1200px; }
         .modal { transition: opacity 0.3s ease; }
-        /* Style for disabled inputs to make them look non-editable */
-        input:disabled, select:disabled, textarea:disabled {
-            background-color: #f3f4f6;
-            color: #6b7280;
-            cursor: not-allowed;
+        
+        /* Improved styling for locked/saved form fields */
+        .form-field-locked {
+            background-color: transparent !important;
+            border-color: transparent !important;
+            color: #1f2937; /* Darker text for readability */
+            padding-left: 0.25rem; /* Align text with normal inputs */
+            box-shadow: none;
+            cursor: default;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+        .form-field-locked:focus {
+            ring-width: 0;
+        }
+        /* Hide the dropdown arrow on locked select elements */
+        select.form-field-locked {
+            background-image: none;
         }
     </style>
 </head>
@@ -76,11 +90,8 @@
                                 <div>
                                     <label for="contactNumber" class="block text-gray-700 font-medium mb-2">Contact Number</label>
                                     <div class="flex">
-                                        <select id="countryCode" class="px-2 border border-r-0 rounded-l-lg bg-gray-50">
-                                            <option value="+91">IN (+91)</option>
-                                            <option value="+1">US (+1)</option>
-                                        </select>
-                                        <input type="tel" id="contactNumber" class="w-full px-4 py-2 border rounded-r-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" pattern="\d{10}">
+                                        <select id="countryCode" class="px-2 border border-r-0 rounded-l-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"></select>
+                                        <input type="tel" id="contactNumber" class="w-full px-4 py-2 border rounded-r-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" pattern="\d*">
                                     </div>
                                 </div>
                                 <div>
@@ -89,10 +100,7 @@
                                 </div>
                                 <div>
                                     <label for="pincode" class="block text-gray-700 font-medium mb-2">Pincode</label>
-                                    <div class="flex">
-                                        <input type="text" id="pincode" class="w-full px-4 py-2 border rounded-l-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                                        <button type="button" id="fetch-location-btn" class="bg-gray-200 px-4 rounded-r-lg text-sm font-semibold hover:bg-gray-300">Fetch</button>
-                                    </div>
+                                    <input type="text" id="pincode" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                 </div>
                                 <div>
                                     <label for="state" class="block text-gray-700 font-medium mb-2">State</label>
@@ -165,11 +173,11 @@
         const editProfileBtn = document.getElementById('edit-profile-btn');
         const dobInput = document.getElementById('dob');
         const ageInput = document.getElementById('age');
-        const fetchLocationBtn = document.getElementById('fetch-location-btn');
         const pincodeInput = document.getElementById('pincode');
         const cityInput = document.getElementById('city');
         const stateInput = document.getElementById('state');
         const countrySelect = document.getElementById('country');
+        const countryCodeSelect = document.getElementById('countryCode');
 
         const showNotification = (message) => {
             const modal = document.getElementById('notification-modal');
@@ -182,14 +190,19 @@
 
         // --- FORM EDIT/LOCK LOGIC ---
         const toggleEditMode = (isEditing) => {
-            const elements = profileForm.elements;
-            for (let i = 0; i < elements.length; i++) {
-                // Keep buttons enabled for their own logic
-                if (elements[i].type !== 'submit' && elements[i].type !== 'button') {
-                    elements[i].disabled = !isEditing;
+            const elements = profileForm.querySelectorAll('input, select, textarea');
+            elements.forEach(el => {
+                if (el.type !== 'submit' && el.type !== 'button') {
+                    el.disabled = !isEditing;
+                    if (isEditing) {
+                        el.classList.remove('form-field-locked');
+                    } else {
+                        el.classList.add('form-field-locked');
+                    }
                 }
-            }
-            // Special handling for read-only fields
+            });
+            
+            // Always keep these readonly
             ageInput.readOnly = true;
             cityInput.readOnly = true;
             stateInput.readOnly = true;
@@ -221,13 +234,12 @@
             document.getElementById('gender').value = profile.gender || '';
             document.getElementById('countryCode').value = profile.countryCode || '+91';
             document.getElementById('contactNumber').value = profile.contactNumber || '';
-            document.getElementById('country').value = profile.country || '';
+            countrySelect.value = profile.country || 'India'; // Default to India
             document.getElementById('pincode').value = profile.pincode || '';
             document.getElementById('state').value = profile.state || '';
             document.getElementById('city').value = profile.city || '';
             document.getElementById('collegeName').value = profile.collegeName || '';
             
-            // If essential profile details exist, lock the form initially
             if (profile.fullName && profile.contactNumber) {
                 toggleEditMode(false);
             } else {
@@ -245,46 +257,78 @@
                 if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
                     age--;
                 }
-                ageInput.value = age;
+                ageInput.value = age >= 0 ? age : '';
             }
         });
 
-        // --- LOCATION FETCH ---
-        fetchLocationBtn.addEventListener('click', async () => {
+        // --- LOCATION FETCH (AUTOMATIC) ---
+        let pincodeTimeout;
+        pincodeInput.addEventListener('input', () => {
+            clearTimeout(pincodeTimeout);
             const pincode = pincodeInput.value.trim();
-            if (pincode.length !== 6) {
-                showNotification("Please enter a valid 6-digit pincode.");
-                return;
-            }
-            fetchLocationBtn.textContent = '...';
-            try {
-                const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
-                const data = await response.json();
-                if (data[0].Status === 'Success') {
-                    const postOffice = data[0].PostOffice[0];
-                    cityInput.value = postOffice.District;
-                    stateInput.value = postOffice.State;
-                } else {
-                    showNotification("Could not find location for this pincode.");
-                    cityInput.value = '';
-                    stateInput.value = '';
-                }
-            } catch (error) {
-                showNotification("Error fetching location data.");
-            } finally {
-                fetchLocationBtn.textContent = 'Fetch';
+            if (pincode.length === 6) {
+                pincodeTimeout = setTimeout(async () => {
+                    pincodeInput.classList.add('opacity-50'); // Visual feedback
+                    try {
+                        const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
+                        const data = await response.json();
+                        if (data[0].Status === 'Success') {
+                            const postOffice = data[0].PostOffice[0];
+                            cityInput.value = postOffice.District;
+                            stateInput.value = postOffice.State;
+                        } else {
+                            showNotification("Could not find location for this pincode.");
+                            cityInput.value = '';
+                            stateInput.value = '';
+                        }
+                    } catch (error) {
+                        showNotification("Error fetching location data.");
+                    } finally {
+                        pincodeInput.classList.remove('opacity-50');
+                    }
+                }, 500); // Debounce for 500ms
             }
         });
         
-        // --- COUNTRY LIST ---
-        function populateCountries() {
-            const countries = ["India", "United States", "United Kingdom", "Canada", "Australia"];
-            countries.forEach(country => {
-                const option = document.createElement('option');
-                option.value = country;
-                option.textContent = country;
-                countrySelect.appendChild(option);
-            });
+        // --- COUNTRY & CODE LISTS ---
+        async function populateCountryData() {
+            try {
+                const response = await fetch('https://restcountries.com/v3.1/all');
+                const countries = await response.json();
+                
+                countries.sort((a, b) => a.name.common.localeCompare(b.name.common));
+
+                countrySelect.innerHTML = '';
+                countryCodeSelect.innerHTML = '';
+
+                countries.forEach(country => {
+                    // Populate country dropdown
+                    const countryOption = document.createElement('option');
+                    countryOption.value = country.name.common;
+                    countryOption.textContent = country.name.common;
+                    countrySelect.appendChild(countryOption);
+
+                    // Populate country code dropdown
+                    if (country.idd.root) {
+                        const dialCode = country.idd.root + (country.idd.suffixes ? country.idd.suffixes[0] : '');
+                        const codeOption = document.createElement('option');
+                        codeOption.value = dialCode;
+                        codeOption.textContent = `${country.cca2} (${dialCode})`;
+                        countryCodeSelect.appendChild(codeOption);
+                    }
+                });
+                // Set default selections after populating
+                countrySelect.value = 'India';
+                countryCodeSelect.value = '+91';
+
+            } catch (error) {
+                console.error("Failed to load country data:", error);
+                // Fallback to a minimal list
+                const fallbackCountries = ["India", "United States", "United Kingdom", "Canada", "Australia"];
+                fallbackCountries.forEach(c => countrySelect.add(new Option(c, c)));
+                const fallbackCodes = [{code: '+91', name: 'IN'}, {code: '+1', name: 'US'}];
+                fallbackCodes.forEach(c => countryCodeSelect.add(new Option(`${c.name} (${c.code})`, c.code)));
+            }
         }
 
         const loadAppliedInternships = async (uid, profile) => {
@@ -357,7 +401,7 @@
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                populateCountries();
+                await populateCountryData(); // Populate dropdowns first
                 const userDocRef = doc(db, "users", user.uid);
                 
                 const docSnap = await getDoc(userDocRef);
@@ -387,9 +431,9 @@
                     try {
                         await setDoc(userDocRef, profileData, { merge: true });
                         showNotification("Profile saved successfully!");
-                        renderProfileForm(user, profileData); // Re-render to update display name
-                        loadAppliedInternships(user.uid, profileData); // Reload applications
-                        toggleEditMode(false); // Lock the form
+                        renderProfileForm(user, profileData);
+                        loadAppliedInternships(user.uid, profileData);
+                        toggleEditMode(false);
                     } catch (error) {
                         showNotification("Error saving profile.", true);
                     }
