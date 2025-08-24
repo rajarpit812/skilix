@@ -7,20 +7,27 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f8f9fa;
+            background-color: #f8fafc;
         }
-        .container { max-width: 1200px; }
+        .container { max-width: 1280px; }
+        .nav-link {
+            transition: color 0.3s;
+            padding-bottom: 4px;
+        }
         .nav-link.active {
             color: #4f46e5;
             border-bottom: 2px solid #4f46e5;
         }
+        .cta-button {
+            transition: all 0.3s ease;
+        }
         .cta-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transform: translateY(-3px);
+            box-shadow: 0 7px 14px rgba(50, 50, 93, 0.1), 0 3px 6px rgba(0, 0, 0, 0.08);
         }
         #message-box {
             position: fixed;
@@ -39,29 +46,37 @@
             opacity: 1;
             visibility: visible;
         }
+        .internship-card {
+            transition: all 0.3s ease;
+        }
+        .internship-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
     </style>
 </head>
 <body class="text-gray-800">
 
     <!-- Header & Navigation -->
-    <header class="bg-white shadow-sm sticky top-0 z-50">
-        <nav class="container mx-auto px-4 py-4 flex items-center justify-between flex-wrap">
+    <header class="bg-white/80 backdrop-blur-lg shadow-sm sticky top-0 z-50">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between flex-wrap">
             <div class="flex items-center flex-shrink-0 text-gray-900 mr-6">
-                <span class="font-bold text-2xl tracking-tight">Skil<span class="text-indigo-600">ix</span></span>
+                <span class="font-extrabold text-3xl tracking-tight">Skil<span class="text-indigo-600">ix</span></span>
             </div>
             <div class="block lg:hidden">
-                <button id="nav-toggle" class="flex items-center px-3 py-2 border rounded text-gray-500 border-gray-400">
+                <button id="nav-toggle" class="flex items-center px-3 py-2 border rounded text-gray-500 border-gray-400 hover:text-gray-900 hover:border-gray-900">
                     <svg class="fill-current h-3 w-3" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><title>Menu</title><path d="M0 3h20v2H0V3zm0 6h20v2H0V9zm0 6h20v2H0v-2z"/></svg>
                 </button>
             </div>
             <div id="nav-content" class="w-full hidden lg:flex lg:items-center lg:w-auto">
                 <div class="text-lg lg:flex-grow">
-                    <a href="#hero" class="nav-link block mt-4 lg:inline-block lg:mt-0 text-gray-600 hover:text-gray-900 mr-4 active">Home</a>
-                    <a href="#internships" class="nav-link block mt-4 lg:inline-block lg:mt-0 text-gray-600 hover:text-gray-900 mr-4">Internships</a>
-                    <a href="#features" class="nav-link block mt-4 lg:inline-block lg:mt-0 text-gray-600 hover:text-gray-900 mr-4">Features</a>
-                    <a href="#contact" class="nav-link block mt-4 lg:inline-block lg:mt-0 text-gray-600 hover:text-gray-900">Contact</a>
+                    <a href="#hero" class="nav-link block mt-4 lg:inline-block lg:mt-0 text-gray-600 hover:text-indigo-600 mr-6 font-medium active">Home</a>
+                    <a href="#internships" class="nav-link block mt-4 lg:inline-block lg:mt-0 text-gray-600 hover:text-indigo-600 mr-6 font-medium">Internships</a>
+                    <a href="#features" class="nav-link block mt-4 lg:inline-block lg:mt-0 text-gray-600 hover:text-indigo-600 mr-6 font-medium">Features</a>
+                    <a href="#contact" class="nav-link block mt-4 lg:inline-block lg:mt-0 text-gray-600 hover:text-indigo-600 mr-6 font-medium">Contact</a>
+                    <a href="#verify" class="nav-link block mt-4 lg:inline-block lg:mt-0 text-gray-600 hover:text-indigo-600 font-medium">Verify</a>
                 </div>
-                <div id="auth-container" class="flex items-center space-x-4 ml-4">
+                <div id="auth-container" class="flex items-center space-x-4 mt-4 lg:mt-0 lg:ml-4">
                      <button id="auth-btn" class="cta-button inline-block bg-indigo-600 text-white font-semibold py-2 px-6 rounded-full text-lg shadow-md hover:bg-indigo-700">
                         Login
                     </button>
@@ -72,17 +87,17 @@
 
     <main>
         <!-- Hero Section -->
-        <section id="hero" class="bg-white py-12 md:py-24">
+        <section id="hero" class="bg-gradient-to-br from-white to-gray-100 py-20 md:py-32">
             <div class="container mx-auto px-6 text-center">
-                <div class="max-w-3xl mx-auto">
+                <div class="max-w-4xl mx-auto">
                     <h1 class="text-4xl md:text-6xl font-extrabold leading-tight text-gray-900">
-                        Launch Your Career with an Online Internship.
+                        Launch Your Career with an <span class="text-indigo-600">Online Internship.</span>
                     </h1>
-                    <p class="mt-4 text-xl text-gray-600">
+                    <p class="mt-6 text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">
                         Discover top remote internships and gain real-world experience, all from the comfort of your home.
                     </p>
-                    <div class="mt-8">
-                        <a href="#internships" class="cta-button inline-block bg-indigo-600 text-white font-semibold py-3 px-8 rounded-full text-lg shadow-md hover:bg-indigo-700">
+                    <div class="mt-10">
+                        <a href="#internships" class="cta-button inline-block bg-indigo-600 text-white font-bold py-4 px-10 rounded-full text-lg shadow-lg hover:bg-indigo-700">
                             Explore Internships
                         </a>
                     </div>
@@ -91,19 +106,19 @@
         </section>
 
         <!-- Features Section -->
-        <section id="features" class="bg-gray-50 py-12 md:py-16">
+        <section id="features" class="bg-white py-16 md:py-24">
             <div class="container mx-auto px-6">
                 <h2 class="text-3xl md:text-4xl font-bold text-center mb-12 text-gray-900">Why Choose Skilix?</h2>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                    <div class="bg-white p-8 rounded-lg shadow-md">
+                    <div class="bg-gray-50 p-8 rounded-lg border border-gray-200">
                         <h3 class="text-xl font-bold mb-2">Curated Opportunities</h3>
                         <p class="text-gray-600">We carefully select every internship to ensure quality and a great learning experience.</p>
                     </div>
-                    <div class="bg-white p-8 rounded-lg shadow-md">
+                    <div class="bg-gray-50 p-8 rounded-lg border border-gray-200">
                         <h3 class="text-xl font-bold mb-2">Remote & Flexible</h3>
                         <p class="text-gray-600">Work from anywhere, on your own schedule. Perfect for students and freshers.</p>
                     </div>
-                    <div class="bg-white p-8 rounded-lg shadow-md">
+                    <div class="bg-gray-50 p-8 rounded-lg border border-gray-200">
                         <h3 class="text-xl font-bold mb-2">Skill-Based Growth</h3>
                         <p class="text-gray-600">Build practical skills and boost your resume with hands-on, real-world projects.</p>
                     </div>
@@ -112,18 +127,39 @@
         </section>
 
         <!-- Internship Section -->
-        <section id="internships" class="py-12 md:py-16">
+        <section id="internships" class="py-16 md:py-24">
             <div class="container mx-auto px-6">
                 <h2 class="text-3xl md:text-4xl font-bold text-center mb-12 text-gray-900">Available Internships</h2>
                 <div id="internship-listings" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     <!-- Internship cards will be dynamically loaded here -->
-                    <p>Loading internships...</p>
+                    <p class="col-span-full text-center text-gray-500">Loading internships...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Verification Section -->
+        <section id="verify" class="bg-white py-16 md:py-24">
+            <div class="container mx-auto px-6">
+                <h2 class="text-3xl md:text-4xl font-bold text-center mb-12 text-gray-900">Verify Certificate</h2>
+                <div class="max-w-xl mx-auto bg-gray-50 p-8 rounded-lg shadow-md border border-gray-200">
+                    <form id="verify-form">
+                        <div class="mb-6">
+                            <label for="certificate-number" class="block text-gray-700 font-medium mb-2">Enter Certificate Number</label>
+                            <input type="text" id="certificate-number" name="certificate-number" class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required placeholder="e.g., SKLX-12345">
+                        </div>
+                        <div class="text-center">
+                            <button type="submit" class="cta-button bg-indigo-600 text-white font-semibold py-3 px-8 rounded-full text-lg">
+                                Verify Now
+                            </button>
+                        </div>
+                    </form>
+                    <div id="verification-result" class="mt-6 text-center"></div>
                 </div>
             </div>
         </section>
 
         <!-- Contact Section -->
-        <section id="contact" class="bg-gray-50 py-12 md:py-16">
+        <section id="contact" class="bg-gray-50 py-16 md:py-24">
             <div class="container mx-auto px-6">
                  <h2 class="text-3xl md:text-4xl font-bold text-center mb-12 text-gray-900">Get in Touch</h2>
                 <div class="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-md border border-gray-200">
@@ -152,7 +188,7 @@
     </main>
 
     <!-- Footer -->
-    <footer class="bg-gray-800 text-white py-8">
+    <footer class="bg-gray-900 text-white py-10">
         <div class="container mx-auto px-6 text-center">
              <p>&copy; 2025 Skilix. All Rights Reserved.</p>
         </div>
@@ -269,6 +305,8 @@
         const googleLoginBtn = document.getElementById('google-login-btn');
         const githubLoginBtn = document.getElementById('github-login-btn');
         const linkedinLoginBtn = document.getElementById('linkedin-login-btn');
+        const verifyForm = document.getElementById('verify-form');
+        const verificationResult = document.getElementById('verification-result');
 
         // --- UTILITY FUNCTIONS ---
         const showModal = () => loginModal.classList.remove('hidden');
@@ -304,12 +342,12 @@
                 querySnapshot.forEach((doc) => {
                     const internship = doc.data();
                     const card = document.createElement('div');
-                    card.className = 'bg-white p-6 rounded-lg shadow-md border border-gray-200 text-center flex flex-col';
+                    card.className = 'internship-card bg-white p-6 rounded-lg shadow-md border border-gray-200 text-center flex flex-col';
                     card.innerHTML = `
-                        <img src="${internship.logoUrl || 'https://placehold.co/100x100/e0e7ff/4f46e5?text=Logo'}" alt="Internship Logo" class="h-20 w-20 object-contain mx-auto mb-4">
+                        <img src="${internship.logoUrl || 'https://placehold.co/100x100/e0e7ff/4f46e5?text=Logo'}" alt="Internship Logo" class="h-20 w-20 object-contain mx-auto mb-4 rounded-full">
                         <h3 class="text-xl font-bold mb-2">${internship.title}</h3>
                         <p class="text-gray-600 mb-4 flex-grow">${internship.description.substring(0, 100)}...</p>
-                        <button data-id="${doc.id}" class="apply-btn mt-auto w-full bg-indigo-500 text-white font-medium py-2 px-6 rounded-md hover:bg-indigo-600 transition-colors">Apply Now</button>
+                        <button data-id="${doc.id}" class="apply-btn mt-auto w-full bg-indigo-500 text-white font-medium py-3 px-6 rounded-lg hover:bg-indigo-600 transition-colors">Apply Now</button>
                     `;
                     internshipListings.appendChild(card);
                 });
@@ -319,7 +357,7 @@
             }
         }
         
-        // --- UPDATED: FUNCTION TO HANDLE APPLICATION ---
+        // --- FUNCTION TO HANDLE APPLICATION ---
         async function handleApply(internshipId) {
             const user = auth.currentUser;
             if (!user) {
@@ -331,7 +369,6 @@
             applyButton.disabled = true;
             applyButton.textContent = 'Applying...';
             try {
-                // 1. Check if user already applied
                 const applicationsRef = collection(db, "applications");
                 const q = query(applicationsRef, where("userId", "==", user.uid), where("internshipId", "==", internshipId));
                 const querySnapshot = await getDocs(q);
@@ -342,7 +379,6 @@
                     return;
                 }
 
-                // 2. Add new application document
                 await addDoc(applicationsRef, {
                     userId: user.uid,
                     internshipId: internshipId,
@@ -420,17 +456,35 @@
         }
 
         // --- UI UPDATE LOGIC ---
-        function updateUI(user) {
+        function updateUI(user, userRole = 'student') {
             authContainer.innerHTML = '';
             if (user) {
+                // Admin Links
+                if (userRole === 'admin') {
+                    const adminLink = document.createElement('a');
+                    adminLink.href = 'admin.html';
+                    adminLink.textContent = 'Admin';
+                    adminLink.className = 'text-lg font-semibold text-gray-700 hover:text-indigo-600';
+
+                    const submissionsLink = document.createElement('a');
+                    submissionsLink.href = 'submission.html';
+                    submissionsLink.textContent = 'Submissions';
+                    submissionsLink.className = 'text-lg font-semibold text-gray-700 hover:text-indigo-600';
+                    
+                    authContainer.appendChild(adminLink);
+                    authContainer.appendChild(submissionsLink);
+                }
+
+                // Profile Link
                 const profileLink = document.createElement('a');
                 profileLink.href = 'profile.html';
                 profileLink.textContent = user.displayName || user.email;
                 profileLink.className = 'text-lg font-semibold text-gray-700 hover:text-indigo-600';
 
+                // Logout Button
                 const logoutBtn = document.createElement('button');
                 logoutBtn.textContent = 'Logout';
-                logoutBtn.className = 'cta-button bg-indigo-600 text-white font-semibold py-2 px-6 rounded-full text-lg';
+                logoutBtn.className = 'cta-button bg-red-500 text-white font-semibold py-2 px-6 rounded-full text-lg';
                 logoutBtn.addEventListener('click', logOut);
 
                 authContainer.appendChild(profileLink);
@@ -444,9 +498,64 @@
             }
         }
 
+        // --- VERIFICATION LOGIC ---
+        verifyForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const certNumber = document.getElementById('certificate-number').value.trim();
+            verificationResult.innerHTML = `<p class="text-gray-600">Searching...</p>`;
+            
+            if (!certNumber) {
+                verificationResult.innerHTML = `<p class="text-red-500">Please enter a certificate number.</p>`;
+                return;
+            }
+
+            try {
+                const applicationsRef = collection(db, "applications");
+                const q = query(applicationsRef, where("certificateNo", "==", certNumber));
+                const querySnapshot = await getDocs(q);
+
+                if (querySnapshot.empty) {
+                    verificationResult.innerHTML = `<p class="text-red-500 font-semibold">No valid certificate found for this number.</p>`;
+                    return;
+                }
+
+                const appDoc = querySnapshot.docs[0];
+                const application = appDoc.data();
+
+                const userDoc = await getDoc(doc(db, "users", application.userId));
+                const internshipDoc = await getDoc(doc(db, "internships", application.internshipId));
+
+                if (!userDoc.exists() || !internshipDoc.exists()) {
+                     verificationResult.innerHTML = `<p class="text-red-500 font-semibold">Certificate data is incomplete.</p>`;
+                     return;
+                }
+
+                const student = userDoc.data();
+                const internship = internshipDoc.data();
+
+                verificationResult.innerHTML = `
+                    <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <h3 class="text-lg font-bold text-green-800">Certificate Verified!</h3>
+                        <p class="mt-2 text-gray-700">This certificate was issued to <strong>${student.fullName || student.name}</strong> for completing the <strong>${internship.title}</strong> internship.</p>
+                        <a href="${application.certificateUrl}" target="_blank" class="mt-3 inline-block text-indigo-600 font-semibold hover:underline">View Certificate &rarr;</a>
+                    </div>
+                `;
+
+            } catch (error) {
+                console.error("Verification error:", error);
+                verificationResult.innerHTML = `<p class="text-red-500 font-semibold">An error occurred during verification.</p>`;
+            }
+        });
+
         // --- EVENT LISTENERS ---
-        onAuthStateChanged(auth, user => {
-            updateUI(user);
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const userDoc = await getDoc(doc(db, "users", user.uid));
+                const userRole = userDoc.exists() ? userDoc.data().role : 'student';
+                updateUI(user, userRole);
+            } else {
+                updateUI(null);
+            }
         });
 
         closeModalBtn.addEventListener('click', hideModal);
