@@ -62,6 +62,7 @@
                         <p><strong>Program Title:</strong> <span id="result-program-title"></span></p>
                         <p><strong>Program Domain:</strong> <span id="result-program-domain"></span></p>
                     </div>
+                     <div id="certificate-link-container" class="mt-6"></div>
                 </div>
 
                 <!-- Not Found State -->
@@ -100,6 +101,8 @@
     const verifiedState = document.getElementById('verified-state');
     const notFoundState = document.getElementById('not-found-state');
     const errorMessage = document.getElementById('error-message');
+    const certificateLinkContainer = document.getElementById('certificate-link-container');
+
 
     const showResult = (state, message = '') => {
         loadingState.classList.add('hidden');
@@ -121,6 +124,8 @@
         loadingState.classList.remove('hidden');
         verifiedState.classList.add('hidden');
         notFoundState.classList.add('hidden');
+        certificateLinkContainer.innerHTML = '';
+
 
         try {
             const applicationsRef = collection(db, "applications");
@@ -160,6 +165,10 @@
             document.getElementById('result-student-name').textContent = user.fullName || user.name;
             document.getElementById('result-program-title').textContent = internship.title;
             document.getElementById('result-program-domain').textContent = internship.domain;
+            
+            if(application.certificateUrl) {
+                certificateLinkContainer.innerHTML = `<a href="${application.certificateUrl}" target="_blank" class="inline-block bg-green-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-green-700">View Certificate PDF</a>`;
+            }
 
             showResult('verified');
 
@@ -177,7 +186,8 @@
 
     window.addEventListener('load', () => {
         const params = new URLSearchParams(window.location.search);
-        const certIdFromUrl = params.get('cid');
+        // Updated to use 'code' to match QR code link
+        const certIdFromUrl = params.get('code') || params.get('cid'); 
         if (certIdFromUrl) {
             certNoInput.value = certIdFromUrl;
             validateCertificate(certIdFromUrl);
