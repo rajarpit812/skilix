@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF--8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Skilix - My Profile</title>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -290,34 +290,37 @@
             }
         });
         
-        // --- COUNTRY & CODE LISTS ---
+        // --- COUNTRY & CODE LISTS (FIXED) ---
         async function populateCountryData() {
             try {
                 const response = await fetch('https://restcountries.com/v3.1/all');
                 const countries = await response.json();
-                
+
                 countries.sort((a, b) => a.name.common.localeCompare(b.name.common));
 
                 countrySelect.innerHTML = '';
                 countryCodeSelect.innerHTML = '';
 
                 countries.forEach(country => {
-                    // Populate country dropdown
+                    // Populate country dropdown with flag emoji
                     const countryOption = document.createElement('option');
                     countryOption.value = country.name.common;
-                    countryOption.textContent = country.name.common;
+                    countryOption.textContent = `${country.flag} ${country.name.common}`;
                     countrySelect.appendChild(countryOption);
 
-                    // Populate country code dropdown
-                    if (country.idd.root) {
-                        const dialCode = country.idd.root + (country.idd.suffixes ? country.idd.suffixes[0] : '');
-                        const codeOption = document.createElement('option');
-                        codeOption.value = dialCode;
-                        codeOption.textContent = `${country.cca2} (${dialCode})`;
-                        countryCodeSelect.appendChild(codeOption);
+                    // Populate country code dropdown with flag emoji
+                    if (country.idd && country.idd.root && country.idd.suffixes) {
+                        country.idd.suffixes.forEach(suffix => {
+                            const dialCode = country.idd.root + suffix;
+                            const codeOption = document.createElement('option');
+                            codeOption.value = dialCode;
+                            codeOption.textContent = `${country.flag} ${country.cca2} (${dialCode})`;
+                            countryCodeSelect.appendChild(codeOption);
+                        });
                     }
                 });
-                // Set default selections after populating
+
+                // Set default selections
                 countrySelect.value = 'India';
                 countryCodeSelect.value = '+91';
 
@@ -326,7 +329,7 @@
                 // Fallback to a minimal list
                 const fallbackCountries = ["India", "United States", "United Kingdom", "Canada", "Australia"];
                 fallbackCountries.forEach(c => countrySelect.add(new Option(c, c)));
-                const fallbackCodes = [{code: '+91', name: 'IN'}, {code: '+1', name: 'US'}];
+                const fallbackCodes = [{ code: '+91', name: 'IN' }, { code: '+1', name: 'US' }];
                 fallbackCodes.forEach(c => countryCodeSelect.add(new Option(`${c.name} (${c.code})`, c.code)));
             }
         }
