@@ -47,9 +47,17 @@
         <main class="container mx-auto px-6 py-8">
             <div class="flex flex-col md:flex-row justify-between items-center mb-8">
                 <h1 class="text-3xl font-bold text-gray-800">Submissions Verification</h1>
-                <div class="flex items-center gap-4 mt-4 md:mt-0 w-full md:w-auto">
+                 <div class="flex items-center gap-4 mt-4 md:mt-0 w-full md:w-auto">
+                    <button id="generate-all-btn" class="bg-purple-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-purple-700">
+                        Generate All Certificates
+                    </button>
                     <input type="text" id="search-input" placeholder="Search by name or email..." class="w-full md:w-64 px-4 py-2 border rounded-lg">
-                    <label for="sort-paid" class="flex items-center cursor-pointer">
+                </div>
+            </div>
+             <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+                <h2 class="text-2xl font-semibold mb-4">Actions & Filters</h2>
+                 <div class="flex items-center gap-x-8 gap-y-4 flex-wrap">
+                      <label for="sort-paid" class="flex items-center cursor-pointer">
                         <span class="text-gray-700 font-medium mr-2">Sort by Paid</span>
                         <div class="relative">
                             <input type="checkbox" id="sort-paid" class="sr-only">
@@ -92,7 +100,12 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { getFirestore, doc, getDoc, collection, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, collection, getDocs, updateDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    // IMPORTANT: Replace this with your actual Cloud Function URL after deployment
+    const GENERATE_CERTIFICATE_URL = 'https://us-central1-your-project-id.cloudfunctions.net/generateCertificate';
+    const GENERATE_ALL_CERTIFICATES_URL = 'https://us-central1-your-project-id.cloudfunctions.net/generateAllCertificates';
+
 
     const firebaseConfig = {
         apiKey: "AIzaSyBrP14baJEyuYYt5xOUt4SeSeUFM3RY2rk",
@@ -116,6 +129,7 @@
     const messageBox = document.getElementById('message-box');
     const searchInput = document.getElementById('search-input');
     const sortPaidToggle = document.getElementById('sort-paid');
+    const generateAllBtn = document.getElementById('generate-all-btn');
 
     let allApplications = [];
     let internshipsMap = new Map();
@@ -143,23 +157,25 @@
             .map(([key, value]) => `<p class="text-xs text-gray-600"><strong>${key}:</strong> <a href="${value}" target="_blank" class="text-blue-500 hover:underline">${value}</a></p>`)
             .join('');
 
-        const verifyButtonHtml = app.verified
-            ? `<button data-appid="${app.id}" class="unverify-btn bg-amber-500 text-white text-xs py-1 px-3 rounded hover:bg-amber-600">Un-verify</button>`
-            : `<button data-appid="${app.id}" class="verify-btn bg-green-500 text-white text-xs py-1 px-3 rounded hover:bg-green-600">Verify</button>`;
-        
         const paymentStatusText = app.paymentStatus === 'paid' ? 'Paid' : 'Pending';
         const paymentStatusColor = app.paymentStatus === 'paid' ? 'text-green-600' : 'text-amber-600';
 
-        const certificateFieldsHtml = app.verified
-            ? `<div>
-                <label class="block text-xs font-medium text-gray-600">Certificate URL</label>
-                <input type="url" id="cert-url-${app.id}" value="${app.certificateUrl || ''}" class="mt-1 block w-full px-2 py-1 border border-gray-300 rounded-md shadow-sm text-xs">
-            </div>
-            <div>
-                <label class="block text-xs font-medium text-gray-600">Certificate No.</label>
-                <input type="text" id="cert-no-${app.id}" value="${app.certificateNo || ''}" class="mt-1 block w-full px-2 py-1 border border-gray-300 rounded-md shadow-sm text-xs">
-            </div>`
-            : '';
+        let actionButtonsHtml = '';
+        if (app.verified) {
+             actionButtonsHtml += `<button data-appid="${app.id}" class="unverify-btn bg-amber-500 text-white text-xs py-1 px-3 rounded hover:bg-amber-600">Un-verify</button>`;
+             if (!app.certificateUrl) {
+                actionButtonsHtml += `<button data-appid="${app.id}" class="generate-cert-btn bg-indigo-600 text-white text-xs py-1 px-3 rounded hover:bg-indigo-700">Generate Certificate</button>`;
+             }
+        } else {
+            actionButtonsHtml += `<button data-appid="${app.id}" class="verify-btn bg-green-500 text-white text-xs py-1 px-3 rounded hover:bg-green-600">Verify</button>`;
+        }
+        
+        const certificateInfoHtml = app.verified ? `
+            <div class="mt-2 text-xs">
+                <p><strong>Certificate No:</strong> ${app.certificateNo || 'Not Generated'}</p>
+                <p><strong>Certificate URL:</strong> ${app.certificateUrl ? `<a href="${app.certificateUrl}" target="_blank" class="text-blue-500 hover:underline">View</a>` : 'Not Generated'}</p>
+            </div>` : '';
+
 
         return `
             <div class="border p-4 rounded-lg bg-white">
@@ -174,16 +190,16 @@
                     </div>
                     <div class="mt-1 text-xs">${submissionDetails}</div>
                     
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-3">
-                        <div>
-                            <label class="block text-xs font-medium text-gray-600">Offer Letter URL</label>
-                            <input type="url" id="offer-${app.id}" value="${app.offerLetterUrl || ''}" class="mt-1 block w-full px-2 py-1 border border-gray-300 rounded-md shadow-sm text-xs">
-                        </div>
-                        ${certificateFieldsHtml}
+                    <div class="mt-3">
+                        <label class="block text-xs font-medium text-gray-600">Offer Letter URL</label>
+                        <input type="url" id="offer-${app.id}" value="${app.offerLetterUrl || ''}" class="mt-1 block w-full px-2 py-1 border border-gray-300 rounded-md shadow-sm text-xs">
                     </div>
-                    <div class="text-right mt-2 flex justify-end gap-2">
-                        <button data-appid="${app.id}" class="save-links-btn bg-blue-500 text-white text-xs py-1 px-3 rounded hover:bg-blue-600">Save Links</button>
-                        ${verifyButtonHtml}
+
+                    ${certificateInfoHtml}
+                    
+                    <div class="text-right mt-3 flex justify-end gap-2">
+                        <button data-appid="${app.id}" class="save-links-btn bg-blue-500 text-white text-xs py-1 px-3 rounded hover:bg-blue-600">Save Offer Letter</button>
+                        ${actionButtonsHtml}
                     </div>
                 </div>
             </div>
@@ -251,60 +267,84 @@
     }
 
     async function handleEvent(e) {
-        const verifyBtn = e.target.closest('.verify-btn, .unverify-btn');
-        if (verifyBtn) {
-            const isVerifying = verifyBtn.classList.contains('verify-btn');
-            const appId = verifyBtn.dataset.appid;
-            verifyBtn.disabled = true;
-            verifyBtn.textContent = '...';
-            try {
-                await updateDoc(doc(db, "applications", appId), { verified: isVerifying });
-                const appIndex = allApplications.findIndex(a => a.id === appId);
-                if (appIndex > -1) allApplications[appIndex].verified = isVerifying;
-                renderLists();
-            } catch (error) {
-                console.error(`Error ${isVerifying ? 'verifying' : 'un-verifying'} submission:`, error);
-                verifyBtn.disabled = false;
-            }
-            return;
-        }
+        const button = e.target.closest('button');
+        if (!button) return;
 
-        const saveBtn = e.target.closest('.save-links-btn');
-        if (saveBtn) {
-            const appId = saveBtn.dataset.appid;
-            saveBtn.disabled = true;
-            saveBtn.textContent = '...';
-            
-            const offerUrl = document.getElementById(`offer-${appId}`).value;
-            const certUrlInput = document.getElementById(`cert-url-${appId}`);
-            const certNoInput = document.getElementById(`cert-no-${appId}`);
-            
-            const certUrl = certUrlInput ? certUrlInput.value : '';
-            const certNo = certNoInput ? certNoInput.value : '';
-            
-            try {
-                const dataToUpdate = { offerLetterUrl: offerUrl };
-                if (certUrlInput) dataToUpdate.certificateUrl = certUrl;
-                if (certNoInput) dataToUpdate.certificateNo = certNo;
+        const appId = button.dataset.appid;
+        if (!appId) return;
+
+        button.disabled = true;
+        const originalText = button.textContent;
+        button.textContent = '...';
+
+        try {
+            if (button.classList.contains('verify-btn') || button.classList.contains('unverify-btn')) {
+                const isVerifying = button.classList.contains('verify-btn');
+                const certNo = isVerifying ? `SKLX-${Date.now().toString().slice(-6)}` : '';
                 
-                await updateDoc(doc(db, "applications", appId), dataToUpdate);
-                showMessage('Links saved!');
+                await updateDoc(doc(db, "applications", appId), { 
+                    verified: isVerifying,
+                    certificateNo: certNo,
+                });
 
                 const appIndex = allApplications.findIndex(a => a.id === appId);
                 if (appIndex > -1) {
-                    allApplications[appIndex].offerLetterUrl = offerUrl;
-                    if (certUrlInput) allApplications[appIndex].certificateUrl = certUrl;
-                    if (certNoInput) allApplications[appIndex].certificateNo = certNo;
+                    allApplications[appIndex].verified = isVerifying;
+                    allApplications[appIndex].certificateNo = certNo;
                 }
-            } catch (error) {
-                console.error("Error saving links:", error);
-                showMessage('Failed to save links.', true);
-            } finally {
-                saveBtn.disabled = false;
-                saveBtn.textContent = 'Save Links';
+            } else if (button.classList.contains('save-links-btn')) {
+                const offerUrl = document.getElementById(`offer-${appId}`).value;
+                await updateDoc(doc(db, "applications", appId), { offerLetterUrl: offerUrl });
+                showMessage('Offer letter URL saved!');
+                const appIndex = allApplications.findIndex(a => a.id === appId);
+                if (appIndex > -1) allApplications[appIndex].offerLetterUrl = offerUrl;
+            } else if (button.classList.contains('generate-cert-btn')) {
+                const response = await fetch(GENERATE_CERTIFICATE_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ applicationId: appId })
+                });
+
+                if (!response.ok) throw new Error('Certificate generation failed.');
+                
+                const result = await response.json();
+                showMessage(result.message || 'Certificate generated successfully!');
+                
+                const appIndex = allApplications.findIndex(a => a.id === appId);
+                if (appIndex > -1) allApplications[appIndex].certificateUrl = result.url;
             }
+            renderLists();
+        } catch (error) {
+            console.error("Error performing action:", error);
+            showMessage(`Action failed: ${error.message}`, true);
+        } finally {
+            button.disabled = false;
+            button.textContent = originalText;
         }
     }
+
+    generateAllBtn.addEventListener('click', async () => {
+        if (!confirm('This will generate certificates for ALL verified students who do not have one yet. Are you sure?')) {
+            return;
+        }
+        generateAllBtn.disabled = true;
+        generateAllBtn.textContent = 'Generating...';
+        try {
+            const response = await fetch(GENERATE_ALL_CERTIFICATES_URL, {
+                method: 'POST'
+            });
+            if (!response.ok) throw new Error('Bulk generation failed.');
+            
+            const result = await response.json();
+            showMessage(`${result.count} certificates generated successfully!`);
+            await fetchData(); // Refresh data from Firestore
+        } catch (error) {
+            showMessage(`Error: ${error.message}`, true);
+        } finally {
+            generateAllBtn.disabled = false;
+            generateAllBtn.textContent = 'Generate All Certificates';
+        }
+    });
 
     onAuthStateChanged(auth, async (user) => {
         const isAdmin = await checkAdminRole(user);
