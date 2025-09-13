@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF--8">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Skilix - My Profile</title>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -270,9 +270,11 @@
                 pincodeTimeout = setTimeout(async () => {
                     pincodeInput.classList.add('opacity-50'); // Visual feedback
                     try {
+                        // ✅ Switched to a secure (HTTPS) API to prevent mixed content errors
                         const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
                         const data = await response.json();
-                        if (data[0].Status === 'Success') {
+                        
+                        if (data && data.length > 0 && data[0].Status === 'Success') {
                             const postOffice = data[0].PostOffice[0];
                             cityInput.value = postOffice.District;
                             stateInput.value = postOffice.State;
@@ -282,6 +284,7 @@
                             stateInput.value = '';
                         }
                     } catch (error) {
+                        console.error("Pincode fetch error:", error);
                         showNotification("Error fetching location data.");
                     } finally {
                         pincodeInput.classList.remove('opacity-50');
@@ -290,7 +293,7 @@
             }
         });
         
-        // --- COUNTRY & CODE LISTS (FIXED) ---
+        // --- COUNTRY & CODE LISTS ---
         async function populateCountryData() {
             try {
                 const response = await fetch('https://restcountries.com/v3.1/all');
