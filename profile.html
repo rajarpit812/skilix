@@ -90,13 +90,13 @@
                                 <div>
                                     <label for="contactNumber" class="block text-gray-700 font-medium mb-2">Contact Number</label>
                                     <div class="flex">
-                                        <select id="countryCode" class="px-2 border border-r-0 rounded-l-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"></select>
+                                        <span class="inline-flex items-center px-3 border border-r-0 rounded-l-lg bg-gray-100 text-gray-600">+91</span>
                                         <input type="tel" id="contactNumber" class="w-full px-4 py-2 border rounded-r-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" pattern="\d*">
                                     </div>
                                 </div>
                                 <div>
                                     <label for="country" class="block text-gray-700 font-medium mb-2">Country</label>
-                                    <select id="country" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"></select>
+                                    <input type="text" id="country" value="India" class="w-full px-4 py-2 border rounded-lg bg-gray-100" readonly>
                                 </div>
                                 <div>
                                     <label for="pincode" class="block text-gray-700 font-medium mb-2">Pincode</label>
@@ -104,11 +104,11 @@
                                 </div>
                                 <div>
                                     <label for="state" class="block text-gray-700 font-medium mb-2">State</label>
-                                    <input type="text" id="state" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" readonly>
+                                    <input type="text" id="state" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                 </div>
                                 <div>
                                     <label for="city" class="block text-gray-700 font-medium mb-2">City</label>
-                                    <input type="text" id="city" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" readonly>
+                                    <input type="text" id="city" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                 </div>
                                 <div class="sm:col-span-2">
                                     <label for="collegeName" class="block text-gray-700 font-medium mb-2">College Name</label>
@@ -176,8 +176,6 @@
         const pincodeInput = document.getElementById('pincode');
         const cityInput = document.getElementById('city');
         const stateInput = document.getElementById('state');
-        const countrySelect = document.getElementById('country');
-        const countryCodeSelect = document.getElementById('countryCode');
 
         const showNotification = (message) => {
             const modal = document.getElementById('notification-modal');
@@ -193,6 +191,11 @@
             const elements = profileForm.querySelectorAll('input, select, textarea');
             elements.forEach(el => {
                 if (el.type !== 'submit' && el.type !== 'button') {
+                    // Keep country field readonly always
+                    if (el.id === 'country') {
+                        el.readOnly = true;
+                        return;
+                    }
                     el.disabled = !isEditing;
                     if (isEditing) {
                         el.classList.remove('form-field-locked');
@@ -202,11 +205,9 @@
                 }
             });
             
-            // Always keep these readonly
+            // Always keep age readonly
             ageInput.readOnly = true;
-            cityInput.readOnly = true;
-            stateInput.readOnly = true;
-
+            
             if (isEditing) {
                 saveProfileBtn.classList.remove('hidden');
                 editProfileBtn.classList.add('hidden');
@@ -232,9 +233,7 @@
             document.getElementById('dob').value = profile.dob || '';
             document.getElementById('age').value = profile.age || '';
             document.getElementById('gender').value = profile.gender || '';
-            document.getElementById('countryCode').value = profile.countryCode || '+91';
             document.getElementById('contactNumber').value = profile.contactNumber || '';
-            countrySelect.value = profile.country || 'India'; // Default to India
             document.getElementById('pincode').value = profile.pincode || '';
             document.getElementById('state').value = profile.state || '';
             document.getElementById('city').value = profile.city || '';
@@ -247,7 +246,7 @@
             }
         };
         
-        // --- AGE CALCULATION ---
+        // --- AGE CALCULATION & VALIDATION ---
         dobInput.addEventListener('input', () => {
             if (dobInput.value) {
                 const birthDate = new Date(dobInput.value);
@@ -258,85 +257,19 @@
                     age--;
                 }
                 ageInput.value = age >= 0 ? age : '';
-            }
-        });
 
-        // --- LOCATION FETCH (AUTOMATIC) ---
-        let pincodeTimeout;
-        pincodeInput.addEventListener('input', () => {
-            clearTimeout(pincodeTimeout);
-            const pincode = pincodeInput.value.trim();
-            if (pincode.length === 6) {
-                pincodeTimeout = setTimeout(async () => {
-                    pincodeInput.classList.add('opacity-50'); // Visual feedback
-                    try {
-                        // ✅ Switched to a secure (HTTPS) API to prevent mixed content errors
-                        const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
-                        const data = await response.json();
-                        
-                        if (data && data.length > 0 && data[0].Status === 'Success') {
-                            const postOffice = data[0].PostOffice[0];
-                            cityInput.value = postOffice.District;
-                            stateInput.value = postOffice.State;
-                        } else {
-                            showNotification("Could not find location for this pincode.");
-                            cityInput.value = '';
-                            stateInput.value = '';
-                        }
-                    } catch (error) {
-                        console.error("Pincode fetch error:", error);
-                        showNotification("Error fetching location data.");
-                    } finally {
-                        pincodeInput.classList.remove('opacity-50');
-                    }
-                }, 500); // Debounce for 500ms
+                // Age validation logic
+                if (age < 17 && age >= 0) {
+                    showNotification("You must be at least 17 years old.");
+                    saveProfileBtn.disabled = true;
+                    saveProfileBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                } else {
+                    saveProfileBtn.disabled = false;
+                    saveProfileBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
             }
         });
         
-        // --- COUNTRY & CODE LISTS ---
-        async function populateCountryData() {
-            try {
-                const response = await fetch('https://restcountries.com/v3.1/all');
-                const countries = await response.json();
-
-                countries.sort((a, b) => a.name.common.localeCompare(b.name.common));
-
-                countrySelect.innerHTML = '';
-                countryCodeSelect.innerHTML = '';
-
-                countries.forEach(country => {
-                    // Populate country dropdown with flag emoji
-                    const countryOption = document.createElement('option');
-                    countryOption.value = country.name.common;
-                    countryOption.textContent = `${country.flag} ${country.name.common}`;
-                    countrySelect.appendChild(countryOption);
-
-                    // Populate country code dropdown with flag emoji
-                    if (country.idd && country.idd.root && country.idd.suffixes) {
-                        country.idd.suffixes.forEach(suffix => {
-                            const dialCode = country.idd.root + suffix;
-                            const codeOption = document.createElement('option');
-                            codeOption.value = dialCode;
-                            codeOption.textContent = `${country.flag} ${country.cca2} (${dialCode})`;
-                            countryCodeSelect.appendChild(codeOption);
-                        });
-                    }
-                });
-
-                // Set default selections
-                countrySelect.value = 'India';
-                countryCodeSelect.value = '+91';
-
-            } catch (error) {
-                console.error("Failed to load country data:", error);
-                // Fallback to a minimal list
-                const fallbackCountries = ["India", "United States", "United Kingdom", "Canada", "Australia"];
-                fallbackCountries.forEach(c => countrySelect.add(new Option(c, c)));
-                const fallbackCodes = [{ code: '+91', name: 'IN' }, { code: '+1', name: 'US' }];
-                fallbackCodes.forEach(c => countryCodeSelect.add(new Option(`${c.name} (${c.code})`, c.code)));
-            }
-        }
-
         const loadAppliedInternships = async (uid, profile) => {
             const listEl = document.getElementById('applied-internships-list');
             listEl.innerHTML = '<p>Loading your applications...</p>';
@@ -404,10 +337,8 @@
             }
         };
 
-
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                await populateCountryData(); // Populate dropdowns first
                 const userDocRef = doc(db, "users", user.uid);
                 
                 const docSnap = await getDoc(userDocRef);
@@ -426,9 +357,9 @@
                         age: document.getElementById('age').value,
                         gender: document.getElementById('gender').value,
                         email: user.email,
-                        countryCode: document.getElementById('countryCode').value,
+                        countryCode: '+91', // Hardcoded value
                         contactNumber: document.getElementById('contactNumber').value,
-                        country: document.getElementById('country').value,
+                        country: 'India', // Hardcoded value
                         pincode: document.getElementById('pincode').value,
                         state: document.getElementById('state').value,
                         city: document.getElementById('city').value,
