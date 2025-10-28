@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skilix - My Profile</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+        }
+        .container { max-width: 1200px; }
+        .modal { transition: opacity 0.3s ease; }
+        
+        /* Improved styling for locked/saved form fields */
+        .form-field-locked {
+            background-color: transparent !important;
+            border-color: transparent !important;
+            color: #1f2937; /* Darker text for readability */
+            padding-left: 0.25rem; /* Align text with normal inputs */
+            box-shadow: none;
+            cursor: default;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+        .form-field-locked:focus {
+            ring-width: 0;
+        }
+        /* Hide the dropdown arrow on locked select elements */
+        select.form-field-locked {
+            background-image: none;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <nav class="container mx-auto px-4 py-4 flex items-center justify-between">
+            <a href="index.html" class="font-bold text-2xl tracking-tight">Skil<span class="text-indigo-600">ix</span></a>
+            <div>
+                <a href="admin.html" id="admin-link" class="text-gray-600 hover:text-indigo-600 mr-6 hidden">Admin Dashboard</a>
+                <button id="logout-btn" class="bg-red-500 text-white font-semibold py-2 px-6 rounded-full hover:bg-red-600">
+                    Logout
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <main class="py-12">
+        <div class="container mx-auto px-6">
+            <div class="bg-white rounded-lg shadow-xl p-8 md:p-12 border border-gray-200 mb-12">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="md:col-span-1 text-center">
+                        <img id="user-avatar" src="https://placehold.co/150x150/e0e7ff/4f46e5?text=..." alt="User Avatar" class="h-36 w-36 rounded-full mx-auto object-cover border-4 border-indigo-200">
+                        <h2 id="user-name-display" class="text-2xl font-bold text-gray-900 mt-4">Loading...</h2>
+                        <p id="user-email-display" class="text-gray-600">Loading...</p>
+                    </div>
+                    <div class="md:col-span-2">
+                        <h3 class="text-xl font-bold text-gray-800 mb-6 border-b pb-2">Personal Information</h3>
+                        <form id="profile-form">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                <div>
+                                    <label for="fullName" class="block text-gray-700 font-medium mb-2">Full Name</label>
+                                    <input type="text" id="fullName" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                                <div>
+                                    <label for="fatherName" class="block text-gray-700 font-medium mb-2">Father's Name</label>
+                                    <input type="text" id="fatherName" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                                <div>
+                                    <label for="dob" class="block text-gray-700 font-medium mb-2">Date of Birth</label>
+                                    <input type="date" id="dob" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                                <div>
+                                    <label for="age" class="block text-gray-700 font-medium mb-2">Age</label>
+                                    <input type="number" id="age" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" readonly>
+                                </div>
+                                 <div>
+                                    <label for="gender" class="block text-gray-700 font-medium mb-2">Gender</label>
+                                    <select id="gender" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                        <option value="">Select...</option>
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="contactNumber" class="block text-gray-700 font-medium mb-2">Contact Number</label>
+                                    <div class="flex">
+                                        <select id="countryCode" class="px-2 border border-r-0 rounded-l-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"></select>
+                                        <input type="tel" id="contactNumber" class="w-full px-4 py-2 border rounded-r-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" pattern="\d*">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label for="country" class="block text-gray-700 font-medium mb-2">Country</label>
+                                    <select id="country" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"></select>
+                                </div>
+                                <div>
+                                    <label for="pincode" class="block text-gray-700 font-medium mb-2">Pincode</label>
+                                    <input type="text" id="pincode" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                                <div>
+                                    <label for="state" class="block text-gray-700 font-medium mb-2">State</label>
+                                    <input type="text" id="state" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" readonly>
+                                </div>
+                                <div>
+                                    <label for="city" class="block text-gray-700 font-medium mb-2">City</label>
+                                    <input type="text" id="city" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" readonly>
+                                </div>
+                                <div class="sm:col-span-2">
+                                    <label for="collegeName" class="block text-gray-700 font-medium mb-2">College Name</label>
+                                    <input type="text" id="collegeName" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                            </div>
+                            <div class="mt-8 text-right space-x-4">
+                                <button type="button" id="edit-profile-btn" class="hidden bg-gray-500 text-white font-semibold py-3 px-8 rounded-lg shadow-md hover:bg-gray-600">
+                                    Edit Profile
+                                </button>
+                                <button type="submit" id="save-profile-btn" class="bg-indigo-600 text-white font-semibold py-3 px-8 rounded-lg shadow-md hover:bg-indigo-700">
+                                    Save Changes
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-xl p-8 md:p-12 border border-gray-200 mb-12">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6">My Applications</h2>
+                <div id="applied-internships-list" class="space-y-4">
+                    <p>Loading your applications...</p>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <div id="notification-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 opacity-0 pointer-events-none">
+        <div class="bg-white rounded-lg shadow-xl p-6 max-w-sm text-center">
+            <p id="notification-message" class="text-lg">Message here</p>
+        </div>
+    </div>
+
+    <footer class="bg-gray-800 text-white py-8 mt-12">
+        <div class="container mx-auto px-6 text-center">
+            <p>&copy; 2025 Skilix. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBrP14baJEyuYYt5xOUt4SeSeUFM3RY2rk",
+            authDomain: "skilix.firebaseapp.com",
+            projectId: "skilix",
+            storageBucket: "skilix.appspot.com",
+            messagingSenderId: "1042532384192",
+            appId: "1:1042532384192:web:c0cc1939bb1ba8f7c69c25",
+            measurementId: "G-H7LB645GR9"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const profileForm = document.getElementById('profile-form');
+        const saveProfileBtn = document.getElementById('save-profile-btn');
+        const editProfileBtn = document.getElementById('edit-profile-btn');
+        const dobInput = document.getElementById('dob');
+        const ageInput = document.getElementById('age');
+        const pincodeInput = document.getElementById('pincode');
+        const cityInput = document.getElementById('city');
+        const stateInput = document.getElementById('state');
+        const countrySelect = document.getElementById('country');
+        const countryCodeSelect = document.getElementById('countryCode');
+
+        const showNotification = (message) => {
+            const modal = document.getElementById('notification-modal');
+            document.getElementById('notification-message').textContent = message;
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                modal.classList.add('opacity-0', 'pointer-events-none');
+            }, 2500);
+        };
+
+        // --- FORM EDIT/LOCK LOGIC ---
+        const toggleEditMode = (isEditing) => {
+            const elements = profileForm.querySelectorAll('input, select, textarea');
+            elements.forEach(el => {
+                if (el.type !== 'submit' && el.type !== 'button') {
+                    el.disabled = !isEditing;
+                    if (isEditing) {
+                        el.classList.remove('form-field-locked');
+                    } else {
+                        el.classList.add('form-field-locked');
+                    }
+                }
+            });
+            
+            // Always keep these readonly
+            ageInput.readOnly = true;
+            cityInput.readOnly = true;
+            stateInput.readOnly = true;
+
+            if (isEditing) {
+                saveProfileBtn.classList.remove('hidden');
+                editProfileBtn.classList.add('hidden');
+            } else {
+                saveProfileBtn.classList.add('hidden');
+                editProfileBtn.classList.remove('hidden');
+            }
+        };
+
+        const renderProfileForm = (user, profile) => {
+            const displayName = profile.fullName || profile.name || user.displayName || 'New User';
+
+            if (profile.role === 'admin') {
+                document.getElementById('admin-link').classList.remove('hidden');
+            }
+            
+            document.getElementById('user-name-display').textContent = displayName;
+            document.getElementById('user-email-display').textContent = user.email;
+            document.getElementById('user-avatar').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=e0e7ff&color=4f46e5`;
+
+            document.getElementById('fullName').value = profile.fullName || profile.name || '';
+            document.getElementById('fatherName').value = profile.fatherName || '';
+            document.getElementById('dob').value = profile.dob || '';
+            document.getElementById('age').value = profile.age || '';
+            document.getElementById('gender').value = profile.gender || '';
+            document.getElementById('countryCode').value = profile.countryCode || '+91';
+            document.getElementById('contactNumber').value = profile.contactNumber || '';
+            countrySelect.value = profile.country || 'India'; // Default to India
+            document.getElementById('pincode').value = profile.pincode || '';
+            document.getElementById('state').value = profile.state || '';
+            document.getElementById('city').value = profile.city || '';
+            document.getElementById('collegeName').value = profile.collegeName || '';
+            
+            if (profile.fullName && profile.contactNumber) {
+                toggleEditMode(false);
+            } else {
+                toggleEditMode(true);
+            }
+        };
+        
+        // --- AGE CALCULATION ---
+        dobInput.addEventListener('input', () => {
+            if (dobInput.value) {
+                const birthDate = new Date(dobInput.value);
+                const today = new Date();
+                let age = today.getFullYear() - birthDate.getFullYear();
+                const m = today.getMonth() - birthDate.getMonth();
+                if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                    age--;
+                }
+                ageInput.value = age >= 0 ? age : '';
+            }
+        });
+
+        // --- LOCATION FETCH (AUTOMATIC) ---
+        let pincodeTimeout;
+        pincodeInput.addEventListener('input', () => {
+            clearTimeout(pincodeTimeout);
+            const pincode = pincodeInput.value.trim();
+            if (pincode.length === 6) {
+                pincodeTimeout = setTimeout(async () => {
+                    pincodeInput.classList.add('opacity-50'); // Visual feedback
+                    try {
+                        const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
+                        const data = await response.json();
+                        if (data[0].Status === 'Success') {
+                            const postOffice = data[0].PostOffice[0];
+                            cityInput.value = postOffice.District;
+                            stateInput.value = postOffice.State;
+                        } else {
+                            showNotification("Could not find location for this pincode.");
+                            cityInput.value = '';
+                            stateInput.value = '';
+                        }
+                    } catch (error) {
+                        showNotification("Error fetching location data.");
+                    } finally {
+                        pincodeInput.classList.remove('opacity-50');
+                    }
+                }, 500); // Debounce for 500ms
+            }
+        });
+        
+        // --- COUNTRY & CODE LISTS ---
+        async function populateCountryData() {
+            try {
+                const response = await fetch('https://restcountries.com/v3.1/all');
+                const countries = await response.json();
+                
+                countries.sort((a, b) => a.name.common.localeCompare(b.name.common));
+
+                countrySelect.innerHTML = '';
+                countryCodeSelect.innerHTML = '';
+
+                countries.forEach(country => {
+                    // Populate country dropdown
+                    const countryOption = document.createElement('option');
+                    countryOption.value = country.name.common;
+                    countryOption.textContent = country.name.common;
+                    countrySelect.appendChild(countryOption);
+
+                    // Populate country code dropdown
+                    if (country.idd.root) {
+                        const dialCode = country.idd.root + (country.idd.suffixes ? country.idd.suffixes[0] : '');
+                        const codeOption = document.createElement('option');
+                        codeOption.value = dialCode;
+                        codeOption.textContent = `${country.cca2} (${dialCode})`;
+                        countryCodeSelect.appendChild(codeOption);
+                    }
+                });
+                // Set default selections after populating
+                countrySelect.value = 'India';
+                countryCodeSelect.value = '+91';
+
+            } catch (error) {
+                console.error("Failed to load country data:", error);
+                // Fallback to a minimal list
+                const fallbackCountries = ["India", "United States", "United Kingdom", "Canada", "Australia"];
+                fallbackCountries.forEach(c => countrySelect.add(new Option(c, c)));
+                const fallbackCodes = [{code: '+91', name: 'IN'}, {code: '+1', name: 'US'}];
+                fallbackCodes.forEach(c => countryCodeSelect.add(new Option(`${c.name} (${c.code})`, c.code)));
+            }
+        }
+
+        const loadAppliedInternships = async (uid, profile) => {
+            const listEl = document.getElementById('applied-internships-list');
+            listEl.innerHTML = '<p>Loading your applications...</p>';
+
+            const detailsComplete = profile && profile.fullName && profile.contactNumber && profile.collegeName;
+
+            try {
+                const internshipsSnapshot = await getDocs(collection(db, "internships"));
+                const internshipsMap = new Map();
+                internshipsSnapshot.forEach(doc => internshipsMap.set(doc.id, doc.data()));
+
+                const applicationsRef = collection(db, "applications");
+                const q = query(applicationsRef, where("userId", "==", uid));
+                const applicationsSnapshot = await getDocs(q);
+
+                if (applicationsSnapshot.empty) {
+                    listEl.innerHTML = '<p>You have not applied for any internships yet.</p>';
+                    return;
+                }
+
+                listEl.innerHTML = '';
+                applicationsSnapshot.forEach(appDoc => {
+                    const application = appDoc.data();
+                    const internship = internshipsMap.get(application.internshipId);
+                    if (!internship) return;
+
+                    const itemEl = document.createElement('div');
+                    itemEl.className = 'p-4 border rounded-lg bg-gray-50';
+
+                    let courseButtonHtml = '';
+                    if (detailsComplete) {
+                        courseButtonHtml = `<a href="course.html?id=${appDoc.id}" class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700">Go to Course</a>`;
+                    } else {
+                        courseButtonHtml = `<button class="incomplete-profile-btn bg-gray-400 text-white font-semibold py-2 px-4 rounded-lg cursor-pointer" title="Please complete your personal information.">Go to Course</button>`;
+                    }
+                    
+                    let otherButtonsHtml = '';
+                    if (application.offerLetterUrl) {
+                        otherButtonsHtml += `<a href="${application.offerLetterUrl}" target="_blank" class="bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-600">View Offer Letter</a>`;
+                    }
+                    if (application.certificateUrl) {
+                        otherButtonsHtml += `<a href="${application.certificateUrl}" target="_blank" class="bg-green-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-600">Download Certificate</a>`;
+                    }
+                    
+                    const buttonsHtml = courseButtonHtml + ' ' + otherButtonsHtml;
+
+                    itemEl.innerHTML = `
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
+                            <div>
+                                <h3 class="font-bold text-lg">${internship.title}</h3>
+                                <p class="text-gray-600">${internship.domain}</p>
+                                <p class="text-sm text-gray-500 mt-1">Applied on: ${new Date(application.appliedAt.seconds * 1000).toLocaleDateString()}</p>
+                            </div>
+                            <div class="flex flex-wrap gap-4 mt-4 md:mt-0">
+                                ${buttonsHtml}
+                            </div>
+                        </div>
+                    `;
+                    listEl.appendChild(itemEl);
+                });
+
+            } catch (error) {
+                console.error("Error loading applications:", error);
+                listEl.innerHTML = '<p class="text-red-500">Could not load your applications.</p>';
+            }
+        };
+
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                await populateCountryData(); // Populate dropdowns first
+                const userDocRef = doc(db, "users", user.uid);
+                
+                const docSnap = await getDoc(userDocRef);
+                const userProfileData = docSnap.exists() ? docSnap.data() : {};
+
+                renderProfileForm(user, userProfileData);
+                loadAppliedInternships(user.uid, userProfileData);
+
+                profileForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const profileData = {
+                        fullName: document.getElementById('fullName').value,
+                        name: document.getElementById('fullName').value,
+                        fatherName: document.getElementById('fatherName').value,
+                        dob: document.getElementById('dob').value,
+                        age: document.getElementById('age').value,
+                        gender: document.getElementById('gender').value,
+                        email: user.email,
+                        countryCode: document.getElementById('countryCode').value,
+                        contactNumber: document.getElementById('contactNumber').value,
+                        country: document.getElementById('country').value,
+                        pincode: document.getElementById('pincode').value,
+                        state: document.getElementById('state').value,
+                        city: document.getElementById('city').value,
+                        collegeName: document.getElementById('collegeName').value,
+                    };
+                    try {
+                        await setDoc(userDocRef, profileData, { merge: true });
+                        showNotification("Profile saved successfully!");
+                        renderProfileForm(user, profileData);
+                        loadAppliedInternships(user.uid, profileData);
+                        toggleEditMode(false);
+                    } catch (error) {
+                        showNotification("Error saving profile.", true);
+                    }
+                });
+
+                editProfileBtn.addEventListener('click', () => toggleEditMode(true));
+
+                document.getElementById('applied-internships-list').addEventListener('click', function(event) {
+                    if (event.target.classList.contains('incomplete-profile-btn')) {
+                        showNotification('Please fill your personal info to access the course page.');
+                    }
+                });
+
+            } else {
+                window.location.href = 'index.html';
+            }
+        });
+
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            signOut(auth).catch((error) => console.error('Sign out error', error));
+        });
+
+    </script>
+</body>
+</html>
