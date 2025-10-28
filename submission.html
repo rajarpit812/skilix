@@ -139,9 +139,12 @@
         const internship = internshipsMap.get(app.internshipId);
         if (!student || !internship) return '';
 
-        const submissionDetails = Object.entries(app.submissions || {})
-            .map(([key, value]) => `<p class="text-xs text-gray-600"><strong>${key}:</strong> <a href="${value}" target="_blank" class="text-blue-500 hover:underline">${value}</a></p>`)
-            .join('');
+        let submissionDetails = '<p class="text-xs text-gray-500 italic">No submissions yet.</p>';
+        if (app.submissions && Object.keys(app.submissions).length > 0) {
+            submissionDetails = Object.entries(app.submissions)
+                .map(([key, value]) => `<p class="text-xs text-gray-600"><strong>${key}:</strong> <a href="${value}" target="_blank" class="text-blue-500 hover:underline">${value}</a></p>`)
+                .join('');
+        }
 
         const verifyButtonHtml = app.verified
             ? `<button data-appid="${app.id}" class="unverify-btn bg-amber-500 text-white text-xs py-1 px-3 rounded hover:bg-amber-600">Un-verify</button>`
@@ -235,9 +238,11 @@
                 }
             });
 
+            // --- THIS IS THE FIX ---
             allApplications = appsSnap.docs
                 .map(doc => ({ ...doc.data(), id: doc.id }))
-                .filter(app => app.submissions && usersMap.has(app.userId));
+                .filter(app => usersMap.has(app.userId)); // Removed 'app.submissions' check
+            // ----------------------
 
             renderLists();
 
