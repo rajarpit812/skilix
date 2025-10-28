@@ -400,6 +400,11 @@
                                 paymentId: response.razorpay_payment_id,
                                 orderId: response.razorpay_order_id
                             });
+
+                            // --- THIS IS THE FIX ---
+                            application.paymentStatus = "paid";
+                            // ----------------------
+
                             showMessage("Payment successful!");
                             updatePaymentSection('paid', parseInt(internship.fee, 10), true);
                         } else {
